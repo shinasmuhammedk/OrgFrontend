@@ -9,21 +9,27 @@ function Navbar() {
   const navItems = ["Dashboard", "Canvas", "Run History", "Services", "GraphQL", "Integrations"];
 
   const handleNavigation = (item) => {
-    setActiveNav(item);
-    if (item === "Dashboard") {
-      navigate("/dashboard");
-    } else if (item === "Canvas") {
-      navigate("/canvas");
-    } else if (item === "Run History") {
-      navigate("/run-history");
-    } else if (item === "Services") {
-      navigate("/services");
-    } else if (item === "GraphQL") {
-      navigate("/graphql");
-    } else if (item === "Integrations") {
-      navigate("/integrations");
-    }
-  };
+  setActiveNav(item);
+
+  if (item === "Dashboard") {
+    navigate("/dashboard");
+
+  } else if (item === "Canvas") {
+    navigate("/dashboard");
+
+  } else if (item === "Run History") {
+    navigate("/dashboard");
+
+  } else if (item === "Services") {
+    navigate("/services");
+
+  } else if (item === "GraphQL") {
+    navigate("/graphql");
+
+  } else if (item === "Integrations") {
+    navigate("/integrations");
+  }
+};
 
   const handleSignOut = () => {
     localStorage.removeItem("token");
