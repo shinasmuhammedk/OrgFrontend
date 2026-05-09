@@ -27,17 +27,313 @@ import {
     GitBranch,
     Bot,
     Layers3,
+    ChevronRight,
+    Zap,
 } from "lucide-react";
 import api from "./service/api";
 
+/* ─────────────────────────────────────────
+   DESIGN TOKENS
+───────────────────────────────────────── */
+const T = {
+    bg: "#07070d",
+    surface: "#0e0e18",
+    surfaceHi: "#141420",
+    border: "#1e1e30",
+    borderHi: "#2a2a40",
+    accent: "#c8ff44",
+    accentDim: "rgba(200,255,68,0.12)",
+    accentGlow: "rgba(200,255,68,0.22)",
+    text: "#e8e8f2",
+    textMid: "#9898b8",
+    textDim: "#55556a",
+    success: "#c8ff44",
+    error: "#ff5c7a",
+    running: "#fbbf24",
+    fontMono: '"JetBrains Mono", "Fira Code", monospace',
+    fontDisplay: '"Cal Sans", "DM Sans", system-ui, sans-serif',
+    fontBody: '"DM Sans", system-ui, sans-serif',
+    radius: "14px",
+    radiusSm: "8px",
+    radiusXl: "20px",
+};
+
 const getStatusColor = (status) => {
-    if (status === "success") return "#c8ff44";
-    if (status === "failed") return "#ff5c7a";
-    if (status === "running") return "#fbbf24";
-    return "#272738";
+    if (status === "success") return T.success;
+    if (status === "failed") return T.error;
+    if (status === "running") return T.running;
+    return T.border;
+};
+
+/* ─────────────────────────────────────────
+   GLOBAL STYLES (injected once)
+───────────────────────────────────────── */
+const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --accent: ${T.accent};
+    --accent-dim: ${T.accentDim};
+    --bg: ${T.bg};
+    --surface: ${T.surface};
+    --border: ${T.border};
+    --text: ${T.text};
+    --text-mid: ${T.textMid};
+    --error: ${T.error};
+    --running: ${T.running};
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1e1e30; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2a2a40; }
+
+  /* ReactFlow overrides */
+  .react-flow__attribution { display: none !important; }
+  .react-flow__controls { box-shadow: none !important; }
+  .react-flow__controls-button {
+    background: ${T.surface} !important;
+    border: 1px solid ${T.border} !important;
+    color: ${T.textMid} !important;
+    transition: all 0.15s ease !important;
+  }
+  .react-flow__controls-button:hover {
+    background: ${T.surfaceHi} !important;
+    color: ${T.accent} !important;
+    border-color: ${T.accent} !important;
+  }
+  .react-flow__minimap { border: 1px solid ${T.border} !important; border-radius: ${T.radius} !important; overflow: hidden; }
+  .react-flow__edge-path { transition: stroke 0.3s ease; }
+
+  /* Animations */
+  @keyframes fadeUp   { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes toastIn  { from { opacity: 0; transform: translateY(-12px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes spin     { to { transform: rotate(360deg); } }
+  @keyframes pulse    { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes shimmer  { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes glow     { 0%, 100% { box-shadow: 0 0 12px rgba(200,255,68,0.2); } 50% { box-shadow: 0 0 28px rgba(200,255,68,0.45); } }
+
+  /* Hover utilities */
+  .run-card:hover {
+    border-color: rgba(200,255,68,0.4) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(200,255,68,0.1);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(200,255,68,0.35);
+    background: #d6ff55 !important;
+  }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-secondary:hover:not(:disabled) {
+    border-color: rgba(200,255,68,0.5) !important;
+    color: ${T.accent} !important;
+    background: ${T.accentDim} !important;
+  }
+  .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-ghost:hover { color: ${T.accent} !important; }
+  .node-palette:hover {
+    border-color: rgba(200,255,68,0.5) !important;
+    background: rgba(200,255,68,0.1) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(200,255,68,0.08);
+  }
+  .node-palette:active { transform: translateY(0); }
+  .config-field:focus {
+    border-color: rgba(200,255,68,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(200,255,68,0.08) !important;
+    outline: none !important;
+  }
+  .delete-btn:hover {
+    background: rgba(255,92,122,0.18) !important;
+    box-shadow: 0 0 0 1px rgba(255,92,122,0.4);
+  }
+`;
+
+/* ─────────────────────────────────────────
+   NODE LABEL SHARED STYLE
+───────────────────────────────────────── */
+const nodeLabelStyle = {
+    fontSize: 10,
+    color: T.textDim,
+    textTransform: "uppercase",
+    letterSpacing: "1.2px",
+    fontWeight: 600,
+    marginBottom: 4,
+    fontFamily: T.fontBody,
+};
+
+const handleStyle = {
+    background: T.accent,
+    border: `2px solid ${T.bg}`,
+    width: 10,
+    height: 10,
+    boxShadow: `0 0 6px ${T.accentGlow}`,
+};
+
+/* ─────────────────────────────────────────
+   NODE COMPONENTS
+───────────────────────────────────────── */
+const nodeShell = (selected, status) => {
+    const statusColor = getStatusColor(status);
+    const isIdle = status === "idle";
+    return {
+        background: selected ? T.surfaceHi : T.surface,
+        color: T.text,
+        border: selected
+            ? `1.5px solid ${T.accent}`
+            : isIdle
+                ? `1px solid ${T.border}`
+                : `1px solid ${statusColor}`,
+        borderRadius: T.radius,
+        minWidth: 230,
+        overflow: "hidden",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        boxShadow: selected
+            ? `0 0 0 1px ${T.accentGlow}, 0 8px 32px rgba(0,0,0,0.5), 0 0 24px rgba(200,255,68,0.12)`
+            : isIdle
+                ? "0 2px 12px rgba(0,0,0,0.3)"
+                : `0 0 24px ${statusColor}33, 0 2px 12px rgba(0,0,0,0.4)`,
+        cursor: "pointer",
+        fontFamily: T.fontBody,
+        animation: !isIdle && status === "running" ? "glow 1.5s ease-in-out infinite" : "none",
+    };
+};
+
+const nodeHeaderBase = (accent = T.accent) => ({
+    padding: "10px 14px",
+    borderBottom: `1px solid ${T.border}`,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: `linear-gradient(135deg, rgba(200,255,68,0.07) 0%, transparent 100%)`,
+});
+
+const NodeTag = ({ status }) => {
+    if (status === "idle") return null;
+    const color = getStatusColor(status);
+    return (
+        <div style={{
+            padding: "3px 8px",
+            borderRadius: 99,
+            fontSize: 10,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.8px",
+            background: `${color}18`,
+            color,
+            border: `1px solid ${color}44`,
+            marginLeft: "auto",
+            fontFamily: T.fontMono,
+        }}>
+            {status}
+        </div>
+    );
 };
 
 const HttpRequestNode = ({ data, selected }) => {
+    const status = data.status || "idle";
+    const methodColors = {
+        GET: "#4ade80", POST: "#60a5fa",
+        PUT: "#fbbf24", DELETE: "#f87171",
+        PATCH: "#c084fc", HEAD: T.textMid,
+    };
+
+    return (
+        <div style={nodeShell(selected, status)}>
+            <div style={nodeHeaderBase()}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: T.accentDim, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Globe size={14} color={T.accent} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.accent, letterSpacing: "-0.2px" }}>HTTP Request</span>
+                <NodeTag status={status} />
+            </div>
+            <div style={{ padding: "14px 14px" }}>
+                <div style={nodeLabelStyle}>Method</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: methodColors[data.config?.method] || T.text, marginBottom: 12, fontFamily: T.fontMono }}>
+                    {data.config?.method || "GET"}
+                </div>
+                <div style={nodeLabelStyle}>URL</div>
+                <div style={{ fontSize: 12, color: data.config?.url ? T.text : T.textDim, wordBreak: "break-all", lineHeight: 1.5, fontFamily: data.config?.url ? T.fontMono : T.fontBody }}>
+                    {data.config?.url || "Not configured"}
+                </div>
+            </div>
+            <Handle type="target" position={Position.Left} style={handleStyle} />
+            <Handle type="source" position={Position.Right} style={handleStyle} />
+        </div>
+    );
+};
+
+const WebhookTriggerNode = ({ data, selected }) => {
+    const status = data.status || "idle";
+    return (
+        <div style={nodeShell(selected, status)}>
+            <div style={nodeHeaderBase()}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: T.accentDim, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Webhook size={14} color={T.accent} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.accent }}>Webhook Trigger</span>
+                <NodeTag status={status} />
+            </div>
+            <div style={{ padding: "14px 14px" }}>
+                <div style={nodeLabelStyle}>Endpoint URL</div>
+                <div style={{ fontSize: 11, wordBreak: "break-all", color: data.config?.webhook_url ? T.text : T.textDim, lineHeight: 1.5, fontFamily: T.fontMono }}>
+                    {data.config?.webhook_url || "Save workflow to generate"}
+                </div>
+            </div>
+            <Handle type="source" position={Position.Right} style={handleStyle} />
+        </div>
+    );
+};
+
+const ConditionNode = ({ data, selected }) => {
+    const status = data.status || "idle";
+    return (
+        <div style={nodeShell(selected, status)}>
+            <div style={nodeHeaderBase()}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: T.accentDim, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <GitBranch size={14} color={T.accent} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.accent }}>Condition</span>
+                <NodeTag status={status} />
+            </div>
+            <div style={{ padding: "14px 14px" }}>
+                <div style={nodeLabelStyle}>Field</div>
+                <div style={{ fontSize: 13, color: T.text, marginBottom: 10, fontFamily: T.fontMono }}>
+                    {data.config?.field || <span style={{ color: T.textDim }}>Not configured</span>}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 11, background: T.border, color: T.textMid, padding: "2px 8px", borderRadius: 99, fontFamily: T.fontMono }}>
+                        {data.config?.operator || "equals"}
+                    </span>
+                    <span style={{ fontSize: 12, color: T.text }}>{data.config?.value || ""}</span>
+                </div>
+                <div style={{ marginTop: 14, display: "flex", gap: 6 }}>
+                    {["true", "false"].map(b => (
+                        <div key={b} style={{
+                            fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
+                            background: b === "true" ? "rgba(74,222,128,0.1)" : "rgba(248,113,113,0.1)",
+                            color: b === "true" ? "#4ade80" : "#f87171",
+                            border: `1px solid ${b === "true" ? "rgba(74,222,128,0.3)" : "rgba(248,113,113,0.3)"}`,
+                            textTransform: "uppercase", letterSpacing: "0.5px",
+                        }}>{b}</div>
+                    ))}
+                </div>
+            </div>
+            <Handle type="target" position={Position.Left} style={handleStyle} />
+            <Handle type="source" position={Position.Right} id="true" style={{ ...handleStyle, top: "38%", background: "#4ade80" }} />
+            <Handle type="source" position={Position.Right} id="false" style={{ ...handleStyle, top: "68%", background: "#f87171" }} />
+        </div>
+    );
+};
+
+
+
+const DelayNode = ({ data, selected }) => {
     const status = data.status || "idle";
     const statusColor = getStatusColor(status);
 
@@ -46,28 +342,17 @@ const HttpRequestNode = ({ data, selected }) => {
             style={{
                 background: selected ? "#1a1a2e" : "#12121a",
                 color: "#e4e4f0",
-                border: selected ? "2px solid #c8ff44" : `1px solid ${statusColor}`,
+                border: selected
+                    ? "2px solid #c8ff44"
+                    : `1px solid ${statusColor}`,
                 borderRadius: 12,
                 minWidth: 220,
-                transition: "all 0.2s ease",
-                boxShadow:
-                    status !== "idle"
-                        ? `0 0 22px ${statusColor}55`
-                        : selected
-                            ? "0 0 20px rgba(200, 255, 68, 0.15), 0 4px 12px rgba(0,0,0,0.3)"
-                            : "0 2px 8px rgba(0,0,0,0.2)",
-                cursor: "pointer",
                 overflow: "hidden",
             }}
         >
             <div
                 style={{
-                    background:
-                        status !== "idle"
-                            ? `${statusColor}14`
-                            : selected
-                                ? "rgba(200, 255, 68, 0.1)"
-                                : "rgba(200, 255, 68, 0.05)",
+                    background: "rgba(200,255,68,0.08)",
                     padding: "10px 14px",
                     borderBottom: "1px solid #272738",
                     display: "flex",
@@ -75,82 +360,181 @@ const HttpRequestNode = ({ data, selected }) => {
                     gap: 8,
                 }}
             >
-                <Globe size={15} color={status === "idle" ? "#c8ff44" : statusColor} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: status === "idle" ? "#c8ff44" : statusColor }}>
-                    HTTP Request
+                <Clock3 size={15} color="#c8ff44" />
+
+                <span
+                    style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "#c8ff44",
+                    }}
+                >
+                    Delay
                 </span>
             </div>
 
             <div style={{ padding: "12px 14px" }}>
-                <div style={nodeLabelStyle}>Method</div>
-                <div
-                    style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color:
-                            data.config?.method === "GET"
-                                ? "#4ade80"
-                                : data.config?.method === "POST"
-                                    ? "#60a5fa"
-                                    : data.config?.method === "PUT"
-                                        ? "#fbbf24"
-                                        : data.config?.method === "DELETE"
-                                            ? "#f87171"
-                                            : "#e4e4f0",
-                        marginBottom: 10,
-                    }}
-                >
-                    {data.config?.method || "GET"}
-                </div>
+                <div style={nodeLabelStyle}>Duration</div>
 
-                <div style={nodeLabelStyle}>URL</div>
-                <div
-                    style={{
-                        fontSize: 12,
-                        color: "#e4e4f0",
-                        wordBreak: "break-all",
-                        lineHeight: 1.4,
-                        opacity: data.config?.url ? 1 : 0.4,
-                    }}
-                >
-                    {data.config?.url || "Not configured"}
-                </div>
-
-                <div
-                    style={{
-                        marginTop: 12,
-                        padding: "5px 8px",
-                        borderRadius: 999,
-                        fontSize: 11,
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                        width: "fit-content",
-                        background:
-                            status === "success"
-                                ? "rgba(200,255,68,0.12)"
-                                : status === "failed"
-                                    ? "rgba(255,92,122,0.12)"
-                                    : status === "running"
-                                        ? "rgba(251,191,36,0.12)"
-                                        : "rgba(152,152,184,0.08)",
-                        color: status === "idle" ? "#9898b8" : statusColor,
-                        border: `1px solid ${status === "idle" ? "#272738" : statusColor}`,
-                    }}
-                >
-                    {status}
+                <div style={{ fontSize: 13 }}>
+                    {data.config?.duration || 0} sec
                 </div>
             </div>
 
-            <Handle type="target" position={Position.Left} style={handleStyle} />
-            <Handle type="source" position={Position.Right} style={handleStyle} />
+            <Handle
+                type="target"
+                position={Position.Left}
+                style={handleStyle}
+            />
+
+            <Handle
+                type="source"
+                position={Position.Right}
+                style={handleStyle}
+            />
         </div>
     );
 };
 
-const nodeTypes = { httpRequest: HttpRequestNode };
-const initialNodes = [];
-const initialEdges = [];
+const nodeTypes = {
+    httpRequest: HttpRequestNode,
+    webhookTrigger: WebhookTriggerNode,
+    conditionNode: ConditionNode,
+    delayNode: DelayNode,
+};
 
+/* ─────────────────────────────────────────
+   SMALL SHARED COMPONENTS
+───────────────────────────────────────── */
+const Toast = ({ message, type, onClose }) => {
+    useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
+    const ok = type === "success";
+    return (
+        <div style={{
+            position: "fixed", top: 20, right: 20, zIndex: 9999,
+            padding: "13px 18px",
+            borderRadius: T.radius,
+            background: ok ? "rgba(200,255,68,0.08)" : "rgba(255,92,122,0.08)",
+            border: `1px solid ${ok ? "rgba(200,255,68,0.35)" : "rgba(255,92,122,0.35)"}`,
+            color: ok ? T.accent : T.error,
+            backdropFilter: "blur(16px)",
+            fontWeight: 600,
+            fontSize: 14,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            animation: "toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+            fontFamily: T.fontBody,
+            boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px ${ok ? "rgba(200,255,68,0.08)" : "rgba(255,92,122,0.08)"}`,
+            minWidth: 220,
+        }}>
+            <div style={{ width: 24, height: 24, borderRadius: 6, background: ok ? T.accentDim : "rgba(255,92,122,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+                {ok ? "✓" : "✕"}
+            </div>
+            {message}
+        </div>
+    );
+};
+
+const StatusBadge = ({ status }) => {
+    const isSuccess = status === "success";
+    const color = isSuccess ? T.accent : T.error;
+    return (
+        <span style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "4px 12px", borderRadius: 99,
+            fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.8px",
+            background: `${color}12`, color,
+            border: `1px solid ${color}33`,
+            fontFamily: T.fontMono,
+        }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, boxShadow: `0 0 6px ${color}` }} />
+            {status}
+        </span>
+    );
+};
+
+const SkeletonCard = () => (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18 }}>
+        {[80, "55%", "35%"].map((w, i) => (
+            <div key={i} style={{
+                width: w, height: i === 0 ? 18 : 13,
+                background: "linear-gradient(90deg, #1a1a28 25%, #22223a 50%, #1a1a28 75%)",
+                backgroundSize: "200% 100%",
+                animation: `shimmer 1.5s ease-in-out infinite ${i * 0.15}s`,
+                borderRadius: 6, marginBottom: i < 2 ? 10 : 0,
+            }} />
+        ))}
+    </div>
+);
+
+/* ─────────────────────────────────────────
+   PALETTE CARD
+───────────────────────────────────────── */
+const PaletteNode = ({ icon: Icon, title, sub, onDragStart, disabled }) => {
+    if (disabled) return (
+        <div style={{
+            background: T.bg, border: `1px solid ${T.border}`,
+            borderRadius: T.radius, padding: "14px 16px", marginBottom: 10, opacity: 0.45,
+            display: "flex", alignItems: "center", gap: 12,
+        }}>
+            <div style={{ width: 36, height: 36, borderRadius: 9, background: T.surface, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon size={16} color={T.textDim} />
+            </div>
+            <div>
+                <div style={{ color: T.textMid, fontWeight: 600, fontSize: 13 }}>{title}</div>
+                <div style={{ color: T.textDim, fontSize: 11, marginTop: 2 }}>Coming soon</div>
+            </div>
+        </div>
+    );
+
+    return (
+        <button draggable onDragStart={onDragStart} className="node-palette"
+            style={{
+                width: "100%", background: T.accentDim,
+                border: `1px solid rgba(200,255,68,0.2)`,
+                borderRadius: T.radius, padding: "14px 16px", marginBottom: 10,
+                cursor: "grab", textAlign: "left",
+                transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+                display: "flex", alignItems: "center", gap: 12,
+            }}>
+            <div style={{ width: 36, height: 36, borderRadius: 9, background: "rgba(200,255,68,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon size={16} color={T.accent} />
+            </div>
+            <div style={{ flex: 1 }}>
+                <div style={{ color: T.text, fontWeight: 700, fontSize: 13 }}>{title}</div>
+                <div style={{ color: T.textMid, fontSize: 11, marginTop: 2 }}>{sub}</div>
+            </div>
+            <ChevronRight size={14} color={T.textDim} />
+        </button>
+    );
+};
+
+/* ─────────────────────────────────────────
+   CONFIG FIELD
+───────────────────────────────────────── */
+const ConfigField = ({ label, children }) => (
+    <div style={{ marginBottom: 18 }}>
+        <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: T.textMid, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8, fontFamily: T.fontBody }}>
+            {label}
+        </label>
+        {children}
+    </div>
+);
+
+const fieldBase = {
+    width: "100%", padding: "10px 13px",
+    background: T.bg,
+    border: `1px solid ${T.border}`,
+    color: T.text, borderRadius: T.radiusSm,
+    fontSize: 13, outline: "none",
+    transition: "all 0.15s ease",
+    fontFamily: T.fontBody,
+};
+
+/* ─────────────────────────────────────────
+   MAIN CANVAS COMPONENT
+───────────────────────────────────────── */
 function Canvas() {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -165,23 +549,13 @@ function Canvas() {
     const [sidebarAnimating, setSidebarAnimating] = useState(false);
     const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
     const showToast = (message, type = "success") => setToast({ message, type });
 
     const onConnect = useCallback(
-        (params) =>
-            setEdges((eds) =>
-                addEdge(
-                    {
-                        ...params,
-                        animated: true,
-                        style: { stroke: "#c8ff44", strokeWidth: 2 },
-                    },
-                    eds
-                )
-            ),
+        (params) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: T.accent, strokeWidth: 2 } }, eds)),
         [setEdges]
     );
 
@@ -199,69 +573,77 @@ function Canvas() {
     const applyStepRunStatuses = async (runId) => {
         const res = await api.getWorkflowStepRuns(runId);
         const stepRuns = res.data || [];
-
         setNodes((nds) => {
-            let matchedCount = 0;
-
-            const updatedNodes = nds.map((node, index) => {
-                const nodeStepId = String(node.data.dbStepId || "");
-                const nodeId = String(node.id || "");
-
+            let matched = 0;
+            const updated = nds.map((node, index) => {
                 const stepRun =
-                    stepRuns.find((run) => String(run.FrontendNodeID || run.frontend_node_id || "") === nodeId) ||
-                    stepRuns.find((run) => String(run.WorkflowStepID || run.workflow_step_id || run.workflowStepID || "") === nodeStepId) ||
+                    stepRuns.find(r => String(r.FrontendNodeID || r.frontend_node_id || "") === String(node.id)) ||
+                    stepRuns.find(r => String(r.WorkflowStepID || r.workflow_step_id || "") === String(node.data.dbStepId)) ||
                     stepRuns[index];
-
-                if (stepRun) matchedCount++;
-
-                return {
-                    ...node,
-                    data: {
-                        ...node.data,
-                        status: stepRun ? stepRun.Status || stepRun.status || "success" : "success",
-                    },
-                };
+                if (stepRun) matched++;
+                return { ...node, data: { ...node.data, status: stepRun ? stepRun.Status || stepRun.status || "success" : "success" } };
             });
-
-            return matchedCount === 0
-                ? nds.map((node) => ({
-                    ...node,
-                    data: { ...node.data, status: "success" },
-                }))
-                : updatedNodes;
+            return matched === 0 ? nds.map(n => ({ ...n, data: { ...n.data, status: "success" } })) : updated;
         });
+    };
+
+    const getConditionBranch = (edge) => {
+        if (edge.ConditionBranch?.Valid) return edge.ConditionBranch.String;
+        if (edge.condition_branch?.Valid) return edge.condition_branch.String;
+        if (typeof edge.ConditionBranch === "string") return edge.ConditionBranch;
+        if (typeof edge.condition_branch === "string") return edge.condition_branch;
+        return "";
     };
 
     const fetchWorkflowSteps = async () => {
         try {
             const stepsRes = await api.getWorkflowSteps(id);
             const edgesRes = await api.getWorkflowEdges(id);
-
             const steps = stepsRes.data || [];
             const workflowEdges = edgesRes.data || [];
 
-            const loadedNodes = steps.map((step, index) => ({
-                id: step.FrontendNodeID || step.frontend_node_id,
-                type: "httpRequest",
-                position: {
-                    x: 250 + (index % 3) * 280,
-                    y: 150 + Math.floor(index / 3) * 200,
-                },
-                data: {
-                    label: "HTTP Request",
-                    dbStepId: String(step.ID || step.id || ""),
-                    status: "idle",
-                    config: step.Config || step.config || {},
-                },
-            }));
+            const loadedNodes = steps.map((step, index) => {
+                const stepType = step.StepType || step.step_type;
+                return {
+                    id: step.FrontendNodeID || step.frontend_node_id,
+                    type:
+                        stepType === "webhook_trigger"
+                            ? "webhookTrigger"
+                            : stepType === "condition"
+                                ? "conditionNode"
+                                : stepType === "delay"
+                                    ? "delayNode"
+                                    : "httpRequest",
+                    position: { x: 250 + (index % 3) * 300, y: 150 + Math.floor(index / 3) * 220 },
+                    data: {
+                        label:
+                            stepType === "webhook_trigger"
+                                ? "Webhook Trigger"
+                                : stepType === "condition"
+                                    ? "Condition"
+                                    : stepType === "delay"
+                                        ? "Delay"
+                                        : "HTTP Request",
+                        dbStepId: String(step.ID || step.id || ""),
+                        status: "idle",
+                        config: step.Config || step.config || {},
+                    },
+                };
+            });
 
-            const loadedEdges = workflowEdges.map((edge, index) => ({
-                id: edge.ID || edge.id || `edge-${index}`,
-                source: edge.SourceFrontendNodeID || edge.source_frontend_node_id,
-                target: edge.TargetFrontendNodeID || edge.target_frontend_node_id,
-                animated: true,
-                style: { stroke: "#c8ff44", strokeWidth: 2 },
-            }));
+            const loadedEdges = workflowEdges.map((edge, index) => {
+                const branch = getConditionBranch(edge);
+                return {
+                    id: edge.ID || edge.id || `edge-${index}`,
+                    source: edge.SourceFrontendNodeID || edge.source_frontend_node_id,
+                    target: edge.TargetFrontendNodeID || edge.target_frontend_node_id,
+                    sourceHandle: branch || null,
+                    data: { condition_branch: branch },
+                    label: branch ? branch.toUpperCase() : "",
+                    animated: true,
+                    style: { stroke: branch === "false" ? "#f87171" : T.accent, strokeWidth: 2 },
+                };
+            });
 
             setNodes(loadedNodes);
             setEdges(loadedEdges);
@@ -283,43 +665,10 @@ function Canvas() {
 
     const updateNodeConfig = (key, value) => {
         if (!selectedNode) return;
-
-        setNodes((nds) =>
-            nds.map((node) =>
-                node.id === selectedNode.id
-                    ? {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            config: { ...node.data.config, [key]: value },
-                        },
-                    }
-                    : node
-            )
-        );
-    };
-
-    const addHttpNode = () => {
-        const nodeId = `node-${Date.now()}`;
-
-        const newNode = {
-            id: nodeId,
-            type: "httpRequest",
-            position: {
-                x: 250 + (nodes.length % 3) * 280,
-                y: 150 + Math.floor(nodes.length / 3) * 200,
-            },
-            data: {
-                label: "HTTP Request",
-                status: "idle",
-                config: { url: "", method: "GET", body: "" },
-            },
-        };
-
-        setNodes((nds) => [...nds, newNode]);
-        setSelectedNode(newNode);
-        setSidebarAnimating(true);
-        setTimeout(() => setSidebarAnimating(false), 300);
+        setNodes((nds) => nds.map((node) => node.id === selectedNode.id
+            ? { ...node, data: { ...node.data, config: { ...node.data.config, [key]: value } } }
+            : node
+        ));
     };
 
     const onDragStart = (event, nodeType) => {
@@ -327,48 +676,46 @@ function Canvas() {
         event.dataTransfer.effectAllowed = "move";
     };
 
-    const onDrop = useCallback(
-        (event) => {
-            event.preventDefault();
-            if (!reactFlowInstance) return;
-
-            const type = event.dataTransfer.getData("application/reactflow");
-            if (!type) return;
-
-            const position = reactFlowInstance.screenToFlowPosition({
-                x: event.clientX,
-                y: event.clientY,
-            });
-
-            const nodeId = `node-${Date.now()}`;
-
-            const newNode = {
-                id: nodeId,
-                type: "httpRequest",
-                position,
-                data: {
-                    label: "HTTP Request",
-                    status: "idle",
-                    config: { url: "", method: "GET", body: "" },
-                },
-            };
-
-            setNodes((nds) => nds.concat(newNode));
-            setSelectedNode(newNode);
-        },
-        [reactFlowInstance, setNodes]
-    );
-
-    const onDragOver = useCallback((event) => {
+    const onDrop = useCallback((event) => {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
-    }, []);
+        if (!reactFlowInstance) return;
+        const type = event.dataTransfer.getData("application/reactflow");
+        if (!type) return;
+        const position = reactFlowInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+        const nodeId = `node-${Date.now()}`;
+        const isWebhook = type === "webhookTrigger";
+        const isCondition = type === "conditionNode";
+        const isDelay = type === "delayNode";
+        const newNode = {
+            id: nodeId, type, position,
+            data: {
+                label: isWebhook
+                    ? "Webhook Trigger"
+                    : isCondition
+                        ? "Condition"
+                        : isDelay
+                            ? "Delay"
+                            : "HTTP Request",
+                status: "idle",
+                config: isWebhook
+                    ? {}
+                    : isCondition
+                        ? { field: "", operator: "equals", value: "" }
+                        : isDelay
+                            ? { duration: 5 }
+                            : { url: "", method: "GET", body: "" },
+            },
+        };
+        setNodes((nds) => nds.concat(newNode));
+        setSelectedNode(newNode);
+    }, [reactFlowInstance, setNodes]);
+
+    const onDragOver = useCallback((event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }, []);
 
     const deleteSelectedNode = () => {
         if (!selectedNode) return;
-
-        setNodes((nds) => nds.filter((node) => node.id !== selectedNode.id));
-        setEdges((eds) => eds.filter((edge) => edge.source !== selectedNode.id && edge.target !== selectedNode.id));
+        setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
+        setEdges((eds) => eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id));
         setSelectedNode(null);
         showToast("Node deleted", "success");
     };
@@ -377,23 +724,26 @@ function Canvas() {
         try {
             setSaving(true);
             setError("");
-
             const steps = nodes.map((node, index) => ({
                 frontend_node_id: node.id,
                 step_order: index + 1,
-                step_type: "http_request",
+                step_type:
+                    node.type === "webhookTrigger"
+                        ? "webhook_trigger"
+                        : node.type === "conditionNode"
+                            ? "condition"
+                            : node.type === "delayNode"
+                                ? "delay"
+                                : "http_request",
                 config: node.data.config,
             }));
-
             const workflowEdges = edges.map((edge) => ({
-                source: edge.source,
-                target: edge.target,
+                source: edge.source, target: edge.target,
+                condition_branch: edge.sourceHandle === "true" ? "true" : edge.sourceHandle === "false" ? "false" : "",
             }));
-
             await api.saveWorkflowSteps(id, steps, workflowEdges);
             await fetchWorkflowSteps();
-
-            showToast("Workflow saved successfully", "success");
+            showToast("Workflow saved", "success");
         } catch (err) {
             setError(err.message);
             showToast(err.message, "error");
@@ -402,374 +752,176 @@ function Canvas() {
         }
     };
 
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    const updateNodeStatus = (nodeId, status) => {
-        setNodes((nds) =>
-            nds.map((node) =>
-                node.id === nodeId
-                    ? {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            status,
-                        },
-                    }
-                    : node
-            )
-        );
-    };
-
-    const updateEdgeStatus = (sourceNodeId, status) => {
-        setEdges((eds) =>
-            eds.map((edge) => {
-                if (edge.source !== sourceNodeId) return edge;
-
-                return {
-                    ...edge,
-                    animated: status === "running",
-                    style: {
-                        stroke:
-                            status === "running"
-                                ? "#fbbf24"
-                                : status === "success"
-                                    ? "#c8ff44"
-                                    : "#ff5c7a",
-                        strokeWidth: 2,
-                    },
-                };
-            })
-        );
-    };
-
-    const getOrderedNodes = () => {
-        if (nodes.length === 0) return [];
-
-        const targetIds = new Set(edges.map((edge) => edge.target));
-        const startNode = nodes.find((node) => !targetIds.has(node.id)) || nodes[0];
-
-        const ordered = [];
-        const visited = new Set();
-
-        let currentNode = startNode;
-
-        while (currentNode && !visited.has(currentNode.id)) {
-            ordered.push(currentNode);
-            visited.add(currentNode.id);
-
-            const nextEdge = edges.find((edge) => edge.source === currentNode.id);
-            currentNode = nextEdge
-                ? nodes.find((node) => node.id === nextEdge.target)
-                : null;
-        }
-
-        nodes.forEach((node) => {
-            if (!visited.has(node.id)) ordered.push(node);
-        });
-
-        return ordered;
-    };
-
     const handleRunWorkflow = async () => {
         let poller = null;
-
         try {
             setRunning(true);
             setError("");
+            setNodes((nds) => nds.map((n) => ({ ...n, data: { ...n.data, status: "idle" } })));
+            setEdges((eds) => eds.map((e) => ({ ...e, animated: false, style: { stroke: T.border, strokeWidth: 2 } })));
 
-            // reset nodes
-            setNodes((nds) =>
-                nds.map((node) => ({
-                    ...node,
-                    data: { ...node.data, status: "idle" },
-                }))
-            );
-
-            // reset edges
-            setEdges((eds) =>
-                eds.map((edge) => ({
-                    ...edge,
-                    animated: false,
-                    style: { stroke: "#272738", strokeWidth: 2 },
-                }))
-            );
-
-            // start workflow
             const runRes = await api.runWorkflow(id);
-
-            const runID =
-                runRes.data?.run_id ||
-                runRes.data?.runID ||
-                runRes.data?.id ||
-                runRes.run_id ||
-                runRes.runID;
-
-            if (!runID) {
-                throw new Error("Run ID not returned from backend");
-            }
+            const runID = runRes.data?.run_id || runRes.data?.runID || runRes.data?.id || runRes.run_id || runRes.runID;
+            if (!runID) throw new Error("Run ID not returned from backend");
 
             poller = setInterval(async () => {
                 try {
                     const stepRes = await api.getWorkflowStepRuns(runID);
                     const stepRuns = stepRes.data || [];
 
-                    setNodes((nds) =>
-                        nds.map((node) => {
-                            const stepRun = stepRuns.find(
-                                (run) =>
-                                    String(run.workflow_step_id || run.WorkflowStepID) ===
-                                    String(node.data.dbStepId)
-                            );
+                    setNodes((nds) => nds.map((node) => {
+                        const stepRun = stepRuns.find(r => String(r.workflow_step_id || r.WorkflowStepID) === String(node.data.dbStepId));
+                        return { ...node, data: { ...node.data, status: stepRun ? stepRun.status || stepRun.Status : "idle" } };
+                    }));
 
-                            return {
-                                ...node,
-                                data: {
-                                    ...node.data,
-                                    status: stepRun
-                                        ? stepRun.status || stepRun.Status
-                                        : "idle",
-                                },
-                            };
-                        })
-                    );
+                    setEdges((eds) => eds.map((edge) => {
+                        const srcNode = nodes.find(n => n.id === edge.source);
+                        if (!srcNode) return edge;
+                        const srcRun = stepRuns.find(r => String(r.workflow_step_id || r.WorkflowStepID) === String(srcNode.data.dbStepId));
+                        const s = srcRun?.status || srcRun?.Status || "idle";
+                        return {
+                            ...edge, animated: s === "running",
+                            style: {
+                                stroke: s === "running" ? T.running : s === "success" ? T.accent : s === "failed" ? T.error : T.border,
+                                strokeWidth: 2,
+                            },
+                        };
+                    }));
 
-                    setEdges((eds) =>
-                        eds.map((edge) => {
-                            const sourceNode = nodes.find(
-                                (node) => node.id === edge.source
-                            );
-
-                            if (!sourceNode) return edge;
-
-                            const sourceStepRun = stepRuns.find(
-                                (run) =>
-                                    String(run.workflow_step_id || run.WorkflowStepID) ===
-                                    String(sourceNode.data.dbStepId)
-                            );
-
-                            const status =
-                                sourceStepRun?.status ||
-                                sourceStepRun?.Status ||
-                                "idle";
-
-                            return {
-                                ...edge,
-                                animated: status === "running",
-                                style: {
-                                    stroke:
-                                        status === "running"
-                                            ? "#fbbf24"
-                                            : status === "success"
-                                                ? "#c8ff44"
-                                                : status === "failed"
-                                                    ? "#ff5c7a"
-                                                    : "#272738",
-                                    strokeWidth: 2,
-                                },
-                            };
-                        })
-                    );
-
-                    const hasFailed = stepRuns.some(
-                        (run) => (run.status || run.Status) === "failed"
-                    );
-
-                    const completedCount = stepRuns.filter((run) =>
-                        ["success", "failed"].includes(run.status || run.Status)
-                    ).length;
-
-                    const allCompleted =
-                        nodes.length > 0 && completedCount >= nodes.length;
-
-                    if (hasFailed || allCompleted) {
-                        clearInterval(poller);
-                        poller = null;
-
-                        setRunning(false);
+                    const hasFailed = stepRuns.some(r => (r.status || r.Status) === "failed");
+                    const completed = stepRuns.filter(r => ["success", "failed"].includes(r.status || r.Status)).length;
+                    if (hasFailed || (nodes.length > 0 && completed >= nodes.length)) {
+                        clearInterval(poller); poller = null; setRunning(false);
                         await fetchRuns();
-
-                        showToast(
-                            hasFailed
-                                ? "Workflow failed"
-                                : "Workflow executed successfully",
-                            hasFailed ? "error" : "success"
-                        );
+                        showToast(hasFailed ? "Workflow failed" : "Workflow executed successfully", hasFailed ? "error" : "success");
                     }
                 } catch (pollErr) {
-                    clearInterval(poller);
-                    poller = null;
-
-                    setRunning(false);
-                    setError(pollErr.message);
-                    showToast(pollErr.message, "error");
+                    clearInterval(poller); poller = null; setRunning(false);
+                    setError(pollErr.message); showToast(pollErr.message, "error");
                 }
             }, 500);
         } catch (err) {
             if (poller) clearInterval(poller);
-
-            setRunning(false);
-            setError(err.message);
-            showToast(err.message, "error");
+            setRunning(false); setError(err.message); showToast(err.message, "error");
         }
     };
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-
-        if (!token) {
-            navigate("/login");
-            return;
-        }
-
+        if (!token) { navigate("/login"); return; }
         loadPageData();
     }, [id, navigate]);
 
     useEffect(() => {
         if (!selectedNode) return;
-
-        const updated = nodes.find((n) => n.id === selectedNode.id);
-        if (updated && updated !== selectedNode) {
-            setSelectedNode(updated);
-        }
+        const updated = nodes.find(n => n.id === selectedNode.id);
+        if (updated && updated !== selectedNode) setSelectedNode(updated);
     }, [nodes]);
 
     const formatDate = (dateStr) => {
         if (!dateStr || dateStr === "N/A") return "N/A";
-
         try {
-            return new Date(dateStr).toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-            });
-        } catch {
-            return dateStr;
-        }
+            return new Date(dateStr).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+        } catch { return dateStr; }
     };
 
-    const configWidth = 360;
+    const CONFIG_W = 370;
 
     return (
-        <div
-            style={{
-                minHeight: "100vh",
-                background: "radial-gradient(circle at top left, rgba(200,255,68,0.06), transparent 30%), #09090e",
-                color: "#e4e4f0",
-                padding: "24px",
-                paddingRight: selectedNode ? `${configWidth + 24}px` : "24px",
-                transition: "padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
-            }}
-        >
-            <style>{`
-                @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-                @keyframes sidebarSlide { from { transform: translateX(100%); } to { transform: translateX(0); } }
-                @keyframes spin { to { transform: rotate(360deg); } }
-                .run-card:hover { border-color: #c8ff44 !important; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(200, 255, 68, 0.1); }
-                .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200, 255, 68, 0.3); }
-                .btn-secondary:hover { border-color: #c8ff44 !important; color: #c8ff44 !important; }
-                .btn-ghost:hover { color: #c8ff44 !important; }
-                .node-palette:hover { border-color: #c8ff44 !important; transform: translateY(-1px); }
-            `}</style>
+        <div style={{
+            minHeight: "100vh",
+            background: T.bg,
+            backgroundImage: "radial-gradient(ellipse 60% 40% at 20% 0%, rgba(200,255,68,0.04) 0%, transparent 60%), radial-gradient(ellipse 40% 30% at 80% 100%, rgba(200,255,68,0.03) 0%, transparent 50%)",
+            color: T.text,
+            padding: "28px 28px 40px",
+            paddingRight: selectedNode ? `${CONFIG_W + 28}px` : "28px",
+            transition: "padding-right 0.35s cubic-bezier(0.4,0,0.2,1)",
+            fontFamily: T.fontBody,
+        }}>
+            <style>{GLOBAL_CSS}</style>
 
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-            <button onClick={() => navigate("/dashboard")} className="btn-ghost" style={backButtonStyle}>
-                <ArrowLeft size={18} />
+            {/* ── BACK ── */}
+            <button onClick={() => navigate("/dashboard")} className="btn-ghost"
+                style={{ marginBottom: 22, background: "transparent", color: T.textMid, border: "none", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 8, padding: "6px 0", transition: "color 0.2s", fontFamily: T.fontBody, fontWeight: 500 }}>
+                <ArrowLeft size={16} />
                 Back to Dashboard
             </button>
 
-            <div style={headerStyle}>
+            {/* ── HEADER ── */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
                 <div>
-                    <h1 style={titleStyle}>Workflow Canvas</h1>
-                    <p style={{ color: "#9898b8", fontSize: 15, lineHeight: 1.5 }}>Build, save, run, and inspect your workflow</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+                        <div style={{ width: 8, height: 32, background: T.accent, borderRadius: 4, boxShadow: `0 0 12px ${T.accentGlow}` }} />
+                        <h1 style={{ color: T.text, fontSize: 30, fontWeight: 800, letterSpacing: "-0.8px", margin: 0, fontFamily: T.fontDisplay }}>
+                            Workflow Canvas
+                        </h1>
+                    </div>
+                    <p style={{ color: T.textMid, fontSize: 14, lineHeight: 1.5, marginLeft: 20 }}>Build, connect, save and run your automation workflow</p>
                 </div>
 
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    <button onClick={handleSaveWorkflow} disabled={saving} className="btn-secondary" style={secondaryButtonStyle}>
-                        {saving ? (
-                            <>
-                                <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
-                                Saving...
-                            </>
-                        ) : (
-                            <>
-                                <Save size={16} />
-                                Save Workflow
-                            </>
-                        )}
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button onClick={handleSaveWorkflow} disabled={saving} className="btn-secondary"
+                        style={{ background: T.surface, color: T.text, border: `1px solid ${T.border}`, padding: "11px 18px", borderRadius: T.radiusSm, fontWeight: 700, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s", fontFamily: T.fontBody }}>
+                        {saving
+                            ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />Saving…</>
+                            : <><Save size={15} />Save Workflow</>}
                     </button>
 
-                    <button onClick={handleRunWorkflow} disabled={running} className="btn-primary" style={primaryButtonStyle}>
-                        {running ? (
-                            <>
-                                <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
-                                Running...
-                            </>
-                        ) : (
-                            <>
-                                <Play size={16} fill="currentColor" />
-                                Run Workflow
-                            </>
-                        )}
+                    <button onClick={handleRunWorkflow} disabled={running} className="btn-primary"
+                        style={{ background: T.accent, color: "#07070d", border: "none", padding: "11px 20px", borderRadius: T.radiusSm, fontWeight: 800, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s", fontFamily: T.fontBody }}>
+                        {running
+                            ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />Running…</>
+                            : <><Play size={15} fill="currentColor" />Run Workflow</>}
                     </button>
                 </div>
             </div>
 
+            {/* ── ERROR ── */}
             {error && (
-                <div style={errorStyle}>
-                    <AlertTriangle size={16} />
+                <div style={{ background: "rgba(255,92,122,0.08)", border: "1px solid rgba(255,92,122,0.25)", borderRadius: T.radiusSm, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 10, color: T.error, fontSize: 14, fontWeight: 500 }}>
+                    <AlertTriangle size={15} />
                     {error}
                 </div>
             )}
 
-            <div style={builderLayoutStyle}>
-                <div style={leftSidebarStyle}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-                        <Layers3 size={18} color="#c8ff44" />
-                        <h3 style={{ color: "#c8ff44", fontSize: 16, fontWeight: 800, margin: 0 }}>Nodes</h3>
+            {/* ── BUILDER ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "250px 1fr", gap: 16, height: 620, marginBottom: 36 }}>
+
+                {/* Left Sidebar */}
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusXl, padding: 18, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 20 }}>
+                        <Layers3 size={16} color={T.accent} />
+                        <span style={{ color: T.accent, fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.2px" }}>Node Library</span>
                     </div>
 
-                    <button draggable onDragStart={(event) => onDragStart(event, "httpRequest")} className="node-palette" style={nodePaletteButtonStyle}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                            <div style={activeIconBoxStyle}>
-                                <Globe size={18} color="#c8ff44" />
-                            </div>
-                            <div>
-                                <div style={paletteTitleStyle}>HTTP Request</div>
-                                <div style={paletteSubStyle}>Call APIs & webhooks</div>
-                            </div>
-                        </div>
-                        <div style={{ color: "#c8ff44", fontSize: 12, fontWeight: 700 }}>Drag into canvas →</div>
-                    </button>
+                    <div style={{ fontSize: 10, color: T.textDim, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10 }}>Triggers</div>
+                    <PaletteNode icon={Webhook} title="Webhook Trigger" sub="Start workflow externally" onDragStart={(e) => onDragStart(e, "webhookTrigger")} />
 
-                    {[
-                        { icon: Webhook, title: "Webhook Trigger" },
-                        { icon: Clock3, title: "Delay" },
-                        { icon: GitBranch, title: "Condition" },
-                        { icon: Bot, title: "AI Node" },
-                    ].map((item, index) => {
-                        const Icon = item.icon;
-                        return (
-                            <div key={index} style={disabledPaletteStyle}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                    <div style={disabledIconBoxStyle}>
-                                        <Icon size={18} color="#9898b8" />
-                                    </div>
-                                    <div>
-                                        <div style={{ color: "#d6d6e7", fontWeight: 600, fontSize: 14 }}>{item.title}</div>
-                                        <div style={{ color: "#9898b8", fontSize: 11, marginTop: 2 }}>Coming soon</div>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
+                    <div style={{ fontSize: 10, color: T.textDim, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10, marginTop: 6 }}>Actions</div>
+                    <PaletteNode icon={Globe} title="HTTP Request" sub="Call APIs & endpoints" onDragStart={(e) => onDragStart(e, "httpRequest")} />
+
+                    <div style={{ fontSize: 10, color: T.textDim, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10, marginTop: 6 }}>Logic</div>
+                    <PaletteNode icon={GitBranch} title="Condition" sub="Branch workflow logic" onDragStart={(e) => onDragStart(e, "conditionNode")} />
+
+                    <div style={{ fontSize: 10, color: T.textDim, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10, marginTop: 6 }}>Coming Soon</div>
+                    <PaletteNode
+                        icon={Clock3}
+                        title="Delay"
+                        sub="Wait before continuing"
+                        onDragStart={(e) => onDragStart(e, "delayNode")}
+                    />
+                    <PaletteNode icon={Bot} title="AI Node" sub="LLM-powered step" disabled />
+
+                    <div style={{ marginTop: "auto", paddingTop: 16, borderTop: `1px solid ${T.border}`, fontSize: 11, color: T.textDim, textAlign: "center", lineHeight: 1.5 }}>
+                        <Zap size={12} style={{ display: "inline", marginRight: 4, verticalAlign: "middle", color: T.accent }} />
+                        Drag nodes onto the canvas
+                    </div>
                 </div>
 
-                <div style={canvasWrapperStyle}>
+                {/* Canvas */}
+                <div style={{ border: `1px solid ${T.border}`, borderRadius: T.radiusXl, overflow: "hidden", background: "#09090f", position: "relative" }}>
                     <ReactFlow
                         nodes={nodes}
                         edges={edges}
@@ -779,26 +931,18 @@ function Canvas() {
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
                         onConnect={onConnect}
-                        onNodeClick={(e, node) => {
-                            setSelectedNode(node);
-                            setSidebarAnimating(true);
-                            setTimeout(() => setSidebarAnimating(false), 300);
-                        }}
+                        onNodeClick={(e, node) => { setSelectedNode(node); setSidebarAnimating(true); setTimeout(() => setSidebarAnimating(false), 350); }}
                         onPaneClick={() => setSelectedNode(null)}
                         nodeTypes={nodeTypes}
                         fitView
                         fitViewOptions={{ padding: 0.2 }}
-                        attributionPosition="bottom-left"
-                        defaultEdgeOptions={{
-                            animated: true,
-                            style: { stroke: "#c8ff44", strokeWidth: 2 },
-                        }}
+                        defaultEdgeOptions={{ animated: true, style: { stroke: T.accent, strokeWidth: 2 } }}
                     >
-                        <Background color="#2b2b3d" gap={22} />
-                        <Controls style={controlsStyle} />
-                        <MiniMap style={miniMapStyle} nodeColor={() => "#c8ff44"} maskColor="rgba(9, 9, 14, 0.7)" />
-                        <Panel position="top-left" style={{ margin: 0 }}>
-                            <div style={panelCounterStyle}>
+                        <Background color="#1a1a28" gap={24} size={1} />
+                        <Controls style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, boxShadow: "none" }} />
+                        <MiniMap style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm }} nodeColor={() => T.accent} maskColor="rgba(7,7,13,0.75)" />
+                        <Panel position="top-left" style={{ margin: 12 }}>
+                            <div style={{ background: "rgba(14,14,24,0.85)", border: `1px solid ${T.border}`, borderRadius: T.radiusSm, padding: "7px 13px", fontSize: 11, color: T.textMid, backdropFilter: "blur(12px)", fontFamily: T.fontMono }}>
                                 {nodes.length} node{nodes.length !== 1 ? "s" : ""} · {edges.length} edge{edges.length !== 1 ? "s" : ""}
                             </div>
                         </Panel>
@@ -806,222 +950,191 @@ function Canvas() {
                 </div>
             </div>
 
-            <div style={runHeaderStyle}>
-                <h2 style={{ fontSize: 22, fontWeight: 700, color: "#e4e4f0", letterSpacing: "-0.3px" }}>Run History</h2>
-                {runs.length > 0 && <span style={runCountStyle}>{runs.length} run{runs.length !== 1 ? "s" : ""}</span>}
+            {/* ── RUN HISTORY ── */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 4, height: 20, background: T.accent, borderRadius: 2 }} />
+                    <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, letterSpacing: "-0.4px", margin: 0, fontFamily: T.fontDisplay }}>Run History</h2>
+                </div>
+                {runs.length > 0 && (
+                    <span style={{ fontSize: 12, color: T.textMid, background: T.surface, padding: "4px 12px", borderRadius: 99, border: `1px solid ${T.border}`, fontFamily: T.fontMono }}>
+                        {runs.length} run{runs.length !== 1 ? "s" : ""}
+                    </span>
+                )}
             </div>
 
             {loading && (
-                <div style={{ display: "grid", gap: "14px" }}>
-                    <SkeletonCard />
-                    <SkeletonCard />
-                    <SkeletonCard />
+                <div style={{ display: "grid", gap: 12 }}>
+                    <SkeletonCard /><SkeletonCard /><SkeletonCard />
                 </div>
             )}
 
             {!loading && runs.length === 0 && (
-                <div style={emptyRunsStyle}>
-                    <FileText size={40} style={{ marginBottom: 12, opacity: 0.5 }} />
-                    <p style={{ fontSize: 15, marginBottom: 4 }}>No runs yet</p>
-                    <p style={{ fontSize: 13, opacity: 0.7 }}>Click "Run Workflow" to execute your workflow</p>
+                <div style={{ background: T.surface, border: `1px dashed ${T.border}`, borderRadius: T.radius, padding: "48px 24px", textAlign: "center", color: T.textMid, animation: "fadeUp 0.4s ease" }}>
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: T.bg, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                        <FileText size={22} color={T.textDim} />
+                    </div>
+                    <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, color: T.text }}>No runs yet</p>
+                    <p style={{ fontSize: 13, color: T.textDim }}>Click "Run Workflow" to execute and see results here</p>
                 </div>
             )}
 
-            <div style={{ display: "grid", gap: "14px" }}>
-                {runs.map((run) => (
-                    <div key={run.ID || run.id} className="run-card" onClick={() => navigate(`/workflow-runs/${run.ID || run.id}`)} style={runCardStyle}>
+            <div style={{ display: "grid", gap: 10 }}>
+                {runs.map((run, i) => (
+                    <div key={run.ID || run.id} className="run-card"
+                        onClick={() => navigate(`/workflow-runs/${run.ID || run.id}`)}
+                        style={{
+                            background: T.surface, border: `1px solid ${T.border}`,
+                            borderRadius: T.radius, padding: "18px 20px",
+                            cursor: "pointer", transition: "all 0.2s ease",
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            flexWrap: "wrap", gap: 16,
+                            animation: `fadeUp 0.3s ease ${i * 0.05}s both`,
+                        }}>
                         <div style={{ flex: 1, minWidth: 200 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                                 <StatusBadge status={run.Status || run.status || "unknown"} />
-                                <span style={{ fontSize: 12, color: "#9898b8", fontFamily: "monospace" }}>#{run.ID || run.id}</span>
+                                <span style={{ fontSize: 11, color: T.textDim, fontFamily: T.fontMono }}>#{run.ID || run.id}</span>
                             </div>
-
-                            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-                                <div>
-                                    <div style={historyMetaLabel}>Started</div>
-                                    <div style={historyMetaValue}>{formatDate(run.StartedAt?.Time || run.started_at)}</div>
-                                </div>
-
-                                <div>
-                                    <div style={historyMetaLabel}>Finished</div>
-                                    <div style={historyMetaValue}>
-                                        {run.FinishedAt?.Valid
-                                            ? formatDate(run.FinishedAt.Time)
-                                            : run.finished_at
-                                                ? formatDate(run.finished_at)
-                                                : "In progress"}
+                            <div style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
+                                {[
+                                    ["Started", formatDate(run.StartedAt?.Time || run.started_at)],
+                                    ["Finished", run.FinishedAt?.Valid ? formatDate(run.FinishedAt.Time) : run.finished_at ? formatDate(run.finished_at) : "In progress"],
+                                ].map(([label, val]) => (
+                                    <div key={label}>
+                                        <div style={{ fontSize: 10, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 600, marginBottom: 3 }}>{label}</div>
+                                        <div style={{ fontSize: 13, color: T.text }}>{val}</div>
                                     </div>
-                                </div>
+                                ))}
                             </div>
                         </div>
-
-                        <div style={{ color: "#9898b8", fontSize: 20 }}>→</div>
+                        <ChevronRight size={16} color={T.textDim} />
                     </div>
                 ))}
             </div>
 
+            {/* ── CONFIG PANEL ── */}
             {selectedNode && (
-                <div style={{ ...configPanelStyle, width: configWidth, animation: sidebarAnimating ? "sidebarSlide 0.3s ease" : "none" }}>
-                    <div style={configHeaderStyle}>
+                <div style={{
+                    position: "fixed", right: 0, top: 0,
+                    height: "100vh", width: CONFIG_W,
+                    background: T.surface,
+                    borderLeft: `1px solid ${T.border}`,
+                    padding: "24px 22px",
+                    overflowY: "auto", zIndex: 20,
+                    boxShadow: "-8px 0 40px rgba(0,0,0,0.5)",
+                    animation: sidebarAnimating ? "slideRight 0.35s cubic-bezier(0.34,1.2,0.64,1)" : "none",
+                    display: "flex", flexDirection: "column", gap: 16,
+                }}>
+                    {/* Panel Header */}
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
                         <div>
-                            <h2 style={{ color: "#c8ff44", fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Node Config</h2>
-                            <p style={{ fontSize: 12, color: "#9898b8", fontFamily: "monospace" }}>{selectedNode.id}</p>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                <div style={{ width: 3, height: 18, background: T.accent, borderRadius: 2 }} />
+                                <h2 style={{ color: T.text, fontSize: 17, fontWeight: 800, margin: 0, fontFamily: T.fontDisplay }}>Node Config</h2>
+                            </div>
+                            <div style={{ fontSize: 10, color: T.textDim, fontFamily: T.fontMono, paddingLeft: 11 }}>{selectedNode.id}</div>
                         </div>
-
-                        <button onClick={() => setSelectedNode(null)} style={closeButtonStyle}>
-                            <X size={16} />
+                        <button onClick={() => setSelectedNode(null)}
+                            style={{ background: "rgba(255,92,122,0.08)", border: "1px solid rgba(255,92,122,0.25)", color: T.error, cursor: "pointer", width: 32, height: 32, borderRadius: T.radiusSm, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
+                            <X size={14} />
                         </button>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                        <div>
-                            <label style={labelStyle}>URL</label>
-                            <input value={selectedNode.data.config.url || ""} onChange={(e) => updateNodeConfig("url", e.target.value)} placeholder="https://api.example.com" style={fieldStyle} />
-                        </div>
+                    {/* Type Badge */}
+                    <div style={{ background: T.accentDim, border: "1px solid rgba(200,255,68,0.2)", borderRadius: T.radiusSm, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+                        {selectedNode.type === "httpRequest" && <Globe size={15} color={T.accent} />}
+                        {selectedNode.type === "webhookTrigger" && <Webhook size={15} color={T.accent} />}
+                        {selectedNode.type === "conditionNode" && <GitBranch size={15} color={T.accent} />}
+                        {selectedNode.type === "delayNode" && <Clock3 size={15} color={T.accent} />}
+                        <span style={{ fontSize: 13, fontWeight: 700, color: T.accent }}>
+                            {selectedNode.type === "httpRequest"
+                                ? "HTTP Request"
+                                : selectedNode.type === "webhookTrigger"
+                                    ? "Webhook Trigger"
+                                    : selectedNode.type === "conditionNode"
+                                        ? "Condition"
+                                        : "Delay"}
+                        </span>
+                    </div>
 
-                        <div>
-                            <label style={labelStyle}>Method</label>
-                            <select value={selectedNode.data.config.method || "GET"} onChange={(e) => updateNodeConfig("method", e.target.value)} style={fieldStyle}>
-                                <option value="GET">GET</option>
-                                <option value="POST">POST</option>
-                                <option value="PUT">PUT</option>
-                                <option value="DELETE">DELETE</option>
-                                <option value="PATCH">PATCH</option>
-                                <option value="HEAD">HEAD</option>
-                            </select>
-                        </div>
+                    {/* HTTP Config */}
+                    {selectedNode.type === "httpRequest" && (
+                        <>
+                            <ConfigField label="URL">
+                                <input value={selectedNode.data.config.url || ""} onChange={e => updateNodeConfig("url", e.target.value)}
+                                    placeholder="https://api.example.com/endpoint"
+                                    className="config-field" style={{ ...fieldBase }} />
+                            </ConfigField>
+                            <ConfigField label="Method">
+                                <select value={selectedNode.data.config.method || "GET"} onChange={e => updateNodeConfig("method", e.target.value)}
+                                    className="config-field" style={{ ...fieldBase }}>
+                                    {["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"].map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                            </ConfigField>
+                            <ConfigField label="Body JSON">
+                                <textarea value={selectedNode.data.config.body || ""} onChange={e => updateNodeConfig("body", e.target.value)}
+                                    placeholder={'{\n  "key": "value"\n}'}
+                                    className="config-field"
+                                    style={{ ...fieldBase, height: 140, resize: "vertical", fontFamily: T.fontMono, lineHeight: 1.6, fontSize: 12 }} />
+                            </ConfigField>
+                        </>
+                    )}
 
-                        <div>
-                            <label style={labelStyle}>Body JSON</label>
-                            <textarea
-                                value={selectedNode.data.config.body || ""}
-                                onChange={(e) => updateNodeConfig("body", e.target.value)}
-                                placeholder='{\n  "message": "Hello"\n}'
-                                style={{
-                                    ...fieldStyle,
-                                    height: 140,
-                                    resize: "vertical",
-                                    fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-                                    lineHeight: 1.5,
-                                }}
+                    {/* Condition Config */}
+                    {selectedNode.type === "conditionNode" && (
+                        <>
+                            <ConfigField label="Field">
+                                <input value={selectedNode.data.config.field || ""} onChange={e => updateNodeConfig("field", e.target.value)}
+                                    placeholder="response.status" className="config-field" style={{ ...fieldBase }} />
+                            </ConfigField>
+                            <ConfigField label="Operator">
+                                <select value={selectedNode.data.config.operator || "equals"} onChange={e => updateNodeConfig("operator", e.target.value)}
+                                    className="config-field" style={{ ...fieldBase }}>
+                                    <option value="equals">Equals</option>
+                                    <option value="not_equals">Not Equals</option>
+                                </select>
+                            </ConfigField>
+                            <ConfigField label="Value">
+                                <input value={selectedNode.data.config.value || ""} onChange={e => updateNodeConfig("value", e.target.value)}
+                                    placeholder="active" className="config-field" style={{ ...fieldBase }} />
+                            </ConfigField>
+                        </>
+                    )}
+
+
+                    {selectedNode.type === "delayNode" && (
+                        <ConfigField label="Duration (seconds)">
+                            <input
+                                type="number"
+                                value={selectedNode.data.config.duration || 0}
+                                onChange={(e) =>
+                                    updateNodeConfig("duration", Number(e.target.value))
+                                }
+                                className="config-field"
+                                style={{ ...fieldBase }}
                             />
-                        </div>
+                        </ConfigField>
+                    )}
 
-                        <button onClick={deleteSelectedNode} style={deleteButtonStyle}>
-                            <Trash2 size={16} />
-                            Delete Node
-                        </button>
+                    {/* Delete */}
+                    <button onClick={deleteSelectedNode} className="delete-btn"
+                        style={{ width: "100%", background: "rgba(255,92,122,0.08)", color: T.error, border: "1px solid rgba(255,92,122,0.25)", padding: "12px", borderRadius: T.radiusSm, fontWeight: 700, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.15s", fontFamily: T.fontBody }}>
+                        <Trash2 size={14} />
+                        Delete Node
+                    </button>
 
-                        <div style={configPreviewStyle}>
-                            <p style={configPreviewTitleStyle}>Current Config</p>
-                            <pre style={configPreviewCodeStyle}>{JSON.stringify(selectedNode.data.config, null, 2)}</pre>
-                        </div>
+                    {/* Config Preview */}
+                    <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, padding: "14px" }}>
+                        <div style={{ fontSize: 10, color: T.textDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10 }}>Live Config Preview</div>
+                        <pre style={{ whiteSpace: "pre-wrap", fontSize: 11, color: T.textMid, fontFamily: T.fontMono, lineHeight: 1.7, margin: 0 }}>
+                            {JSON.stringify(selectedNode.data.config, null, 2)}
+                        </pre>
                     </div>
                 </div>
             )}
         </div>
     );
 }
-
-const Toast = ({ message, type, onClose }) => {
-    useEffect(() => {
-        const timer = setTimeout(onClose, 3000);
-        return () => clearTimeout(timer);
-    }, [onClose]);
-
-    return (
-        <div
-            style={{
-                position: "fixed",
-                top: 24,
-                right: 24,
-                zIndex: 100,
-                padding: "14px 20px",
-                borderRadius: 10,
-                background: type === "success" ? "rgba(200, 255, 68, 0.1)" : "rgba(255, 92, 122, 0.1)",
-                border: `1px solid ${type === "success" ? "#c8ff44" : "#ff5c7a"}`,
-                color: type === "success" ? "#c8ff44" : "#ff5c7a",
-                backdropFilter: "blur(10px)",
-                animation: "slideIn 0.3s ease",
-                fontWeight: 600,
-                fontSize: 14,
-            }}
-        >
-            {type === "success" ? "✓" : "✕"} {message}
-        </div>
-    );
-};
-
-const StatusBadge = ({ status }) => {
-    const isSuccess = status === "success";
-
-    return (
-        <span
-            style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
-                borderRadius: 20,
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                background: isSuccess ? "rgba(200, 255, 68, 0.1)" : "rgba(255, 92, 122, 0.1)",
-                color: isSuccess ? "#c8ff44" : "#ff5c7a",
-                border: `1px solid ${isSuccess ? "rgba(200, 255, 68, 0.3)" : "rgba(255, 92, 122, 0.3)"}`,
-            }}
-        >
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: isSuccess ? "#c8ff44" : "#ff5c7a" }} />
-            {status}
-        </span>
-    );
-};
-
-const SkeletonCard = () => (
-    <div style={{ background: "#12121a", border: "1px solid #272738", borderRadius: 12, padding: 16, animation: "pulse 2s infinite" }}>
-        <div style={skeletonLineLarge} />
-        <div style={skeletonLineMedium} />
-        <div style={skeletonLineSmall} />
-    </div>
-);
-
-const nodeLabelStyle = { fontSize: 11, color: "#9898b8", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4 };
-const handleStyle = { background: "#c8ff44", border: "2px solid #12121a", width: 10, height: 10 };
-const backButtonStyle = { marginBottom: "20px", background: "transparent", color: "#9898b8", border: "none", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 8, padding: "8px 0", transition: "color 0.2s" };
-const headerStyle = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: 16 };
-const titleStyle = { color: "#c8ff44", marginBottom: "8px", fontSize: 32, fontWeight: 800, letterSpacing: "-0.5px" };
-const errorStyle = { background: "rgba(255, 92, 122, 0.1)", border: "1px solid rgba(255, 92, 122, 0.3)", borderRadius: 10, padding: "12px 16px", marginBottom: "20px", display: "flex", alignItems: "center", gap: 10, color: "#ff5c7a", fontSize: 14, fontWeight: 500 };
-const builderLayoutStyle = { display: "grid", gridTemplateColumns: "260px 1fr", gap: 18, height: "620px", marginBottom: "32px" };
-const leftSidebarStyle = { background: "#12121a", border: "1px solid #272738", borderRadius: 16, padding: 18, overflowY: "auto" };
-const canvasWrapperStyle = { border: "1px solid #272738", borderRadius: 16, overflow: "hidden", background: "#0d0d14", position: "relative" };
-const controlsStyle = { background: "#12121a", border: "1px solid #272738", borderRadius: 8 };
-const miniMapStyle = { background: "#12121a", border: "1px solid #272738", borderRadius: 8 };
-const panelCounterStyle = { background: "rgba(18, 18, 26, 0.9)", border: "1px solid #272738", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#9898b8", backdropFilter: "blur(10px)" };
-const runHeaderStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" };
-const runCountStyle = { fontSize: 13, color: "#9898b8", background: "#12121a", padding: "4px 12px", borderRadius: 20, border: "1px solid #272738" };
-const emptyRunsStyle = { background: "#12121a", border: "1px dashed #272738", borderRadius: 12, padding: "40px", textAlign: "center", color: "#9898b8" };
-const runCardStyle = { background: "#12121a", border: "1px solid #272738", borderRadius: 12, padding: "18px", cursor: "pointer", transition: "all 0.2s ease", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 };
-const configPanelStyle = { position: "fixed", right: 0, top: 0, height: "100vh", background: "#12121a", borderLeft: "1px solid #272738", padding: "24px", overflowY: "auto", zIndex: 20, boxShadow: "-4px 0 24px rgba(0,0,0,0.3)" };
-const configHeaderStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" };
-const closeButtonStyle = { background: "rgba(255, 92, 122, 0.1)", border: "1px solid rgba(255, 92, 122, 0.3)", color: "#ff5c7a", cursor: "pointer", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" };
-const deleteButtonStyle = { marginTop: 8, width: "100%", background: "rgba(255, 92, 122, 0.1)", color: "#ff5c7a", border: "1px solid rgba(255, 92, 122, 0.3)", padding: "12px", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 };
-const configPreviewStyle = { marginTop: 8, padding: "14px", background: "#09090e", border: "1px solid #272738", borderRadius: 10 };
-const configPreviewTitleStyle = { color: "#9898b8", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 };
-const configPreviewCodeStyle = { whiteSpace: "pre-wrap", fontSize: 12, color: "#e4e4f0", fontFamily: '"JetBrains Mono", "Fira Code", monospace', lineHeight: 1.6, margin: 0 };
-const labelStyle = { display: "block", fontSize: 12, fontWeight: 600, color: "#9898b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 };
-const fieldStyle = { width: "100%", padding: "10px 12px", background: "#09090e", border: "1px solid #272738", color: "#e4e4f0", borderRadius: 8, fontSize: 14, outline: "none" };
-const secondaryButtonStyle = { background: "#12121a", color: "#e4e4f0", border: "1px solid #272738", padding: "12px 18px", borderRadius: 10, fontWeight: 700, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" };
-const primaryButtonStyle = { background: "#c8ff44", color: "#09090e", border: "none", padding: "12px 20px", borderRadius: 10, fontWeight: 800, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" };
-const activeIconBoxStyle = { width: 38, height: 38, borderRadius: 10, background: "rgba(200,255,68,0.12)", display: "flex", alignItems: "center", justifyContent: "center" };
-const disabledIconBoxStyle = { width: 38, height: 38, borderRadius: 10, background: "#171722", display: "flex", alignItems: "center", justifyContent: "center" };
-const paletteTitleStyle = { color: "#e4e4f0", fontWeight: 700, fontSize: 14 };
-const paletteSubStyle = { color: "#9898b8", fontSize: 12 };
-const nodePaletteButtonStyle = { width: "100%", background: "rgba(200,255,68,0.08)", border: "1px solid rgba(200,255,68,0.25)", borderRadius: 14, padding: 16, marginBottom: 14, cursor: "pointer", textAlign: "left", transition: "all 0.2s" };
-const disabledPaletteStyle = { opacity: 0.45, background: "#0d0d14", border: "1px solid #272738", borderRadius: 14, padding: 16, marginBottom: 12 };
-const historyMetaLabel = { fontSize: 11, color: "#9898b8", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 2 };
-const historyMetaValue = { fontSize: 13, color: "#e4e4f0" };
-const skeletonLineLarge = { width: 80, height: 20, background: "#1e1e2e", borderRadius: 4, marginBottom: 12 };
-const skeletonLineMedium = { width: "60%", height: 14, background: "#1e1e2e", borderRadius: 4, marginBottom: 8 };
-const skeletonLineSmall = { width: "40%", height: 14, background: "#1e1e2e", borderRadius: 4 };
 
 export default Canvas;
