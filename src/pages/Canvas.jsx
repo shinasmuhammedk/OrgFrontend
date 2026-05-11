@@ -29,6 +29,7 @@ import {
     Layers3,
     ChevronRight,
     Zap,
+    Mail,
 } from "lucide-react";
 import api from "../services/api";
 
@@ -396,11 +397,45 @@ const DelayNode = ({ data, selected }) => {
     );
 };
 
+
+const EmailNode = ({ data, selected }) => {
+    const status = data.status || "idle";
+
+    return (
+        <div style={nodeShell(selected, status)}>
+            <div style={nodeHeaderBase()}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: T.accentDim, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Mail size={14} color={T.accent} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.accent }}>Email</span>
+                <NodeTag status={status} />
+            </div>
+
+            <div style={{ padding: "14px 14px" }}>
+                <div style={nodeLabelStyle}>To</div>
+                <div style={{ fontSize: 12, color: data.config?.to ? T.text : T.textDim, wordBreak: "break-all", marginBottom: 12 }}>
+                    {data.config?.to || "Not configured"}
+                </div>
+
+                <div style={nodeLabelStyle}>Subject</div>
+                <div style={{ fontSize: 12, color: data.config?.subject ? T.text : T.textDim }}>
+                    {data.config?.subject || "No subject"}
+                </div>
+            </div>
+
+            <Handle type="target" position={Position.Left} style={handleStyle} />
+            <Handle type="source" position={Position.Right} style={handleStyle} />
+        </div>
+    );
+};
+
+
 const nodeTypes = {
     httpRequest: HttpRequestNode,
     webhookTrigger: WebhookTriggerNode,
     conditionNode: ConditionNode,
     delayNode: DelayNode,
+    emailNode: EmailNode,
 };
 
 /* ─────────────────────────────────────────
@@ -613,7 +648,9 @@ function Canvas() {
                                 ? "conditionNode"
                                 : stepType === "delay"
                                     ? "delayNode"
-                                    : "httpRequest",
+                                    : stepType === "email"
+                                        ? "emailNode"
+                                        : "httpRequest",
                     position: { x: 250 + (index % 3) * 300, y: 150 + Math.floor(index / 3) * 220 },
                     data: {
                         label:
@@ -623,7 +660,9 @@ function Canvas() {
                                     ? "Condition"
                                     : stepType === "delay"
                                         ? "Delay"
-                                        : "HTTP Request",
+                                        : stepType === "email"
+                                            ? "Email"
+                                            : "HTTP Request",
                         dbStepId: String(step.ID || step.id || ""),
                         status: "idle",
                         config: step.Config || step.config || {},
@@ -686,6 +725,7 @@ function Canvas() {
         const isWebhook = type === "webhookTrigger";
         const isCondition = type === "conditionNode";
         const isDelay = type === "delayNode";
+        const isEmail = type === "emailNode";
         const newNode = {
             id: nodeId, type, position,
             data: {
@@ -695,7 +735,9 @@ function Canvas() {
                         ? "Condition"
                         : isDelay
                             ? "Delay"
-                            : "HTTP Request",
+                            : isEmail
+                                ? "Email"
+                                : "HTTP Request",
                 status: "idle",
                 config: isWebhook
                     ? {}
@@ -703,17 +745,19 @@ function Canvas() {
                         ? { field: "", operator: "equals", value: "" }
                         : isDelay
                             ? { duration: 5, unit: "second" }
-                            : {
-                                url: "",
-                                method: "GET",
-                                body: "",
-                                timeout_seconds: 15,
-                                retry: {
-                                    enabled: false,
-                                    max_attempts: 3,
-                                    delay_seconds: 2,
+                            : isEmail
+                                ? { to: "", subject: "", body: "" }
+                                : {
+                                    url: "",
+                                    method: "GET",
+                                    body: "",
+                                    timeout_seconds: 15,
+                                    retry: {
+                                        enabled: false,
+                                        max_attempts: 3,
+                                        delay_seconds: 2,
+                                    },
                                 },
-                            },
             },
         };
         setNodes((nds) => nds.concat(newNode));
@@ -744,7 +788,9 @@ function Canvas() {
                             ? "condition"
                             : node.type === "delayNode"
                                 ? "delay"
-                                : "http_request",
+                                : node.type === "emailNode"
+                                    ? "email"
+                                    : "http_request",
                 config: node.data.config,
             }));
             const workflowEdges = edges.map((edge) => ({
@@ -911,6 +957,14 @@ function Canvas() {
 
                     <div style={{ fontSize: 10, color: T.textDim, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10, marginTop: 6 }}>Actions</div>
                     <PaletteNode icon={Globe} title="HTTP Request" sub="Call APIs & endpoints" onDragStart={(e) => onDragStart(e, "httpRequest")} />
+
+                    <PaletteNode
+                        icon={Mail}
+                        title="Email"
+                        sub="Send email notification"
+                        onDragStart={(e) => onDragStart(e, "emailNode")}
+                    />
+
 
                     <div style={{ fontSize: 10, color: T.textDim, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, marginBottom: 10, marginTop: 6 }}>Logic</div>
                     <PaletteNode icon={GitBranch} title="Condition" sub="Branch workflow logic" onDragStart={(e) => onDragStart(e, "conditionNode")} />
@@ -1204,6 +1258,47 @@ function Canvas() {
                             </ConfigField>
                         </>
                     )}
+
+                    {selectedNode.type === "emailNode" && (
+                        <>
+                            <ConfigField label="To">
+                                <input
+                                    value={selectedNode.data.config.to || ""}
+                                    onChange={(e) => updateNodeConfig("to", e.target.value)}
+                                    placeholder="user@example.com"
+                                    className="config-field"
+                                    style={{ ...fieldBase }}
+                                />
+                            </ConfigField>
+
+                            <ConfigField label="Subject">
+                                <input
+                                    value={selectedNode.data.config.subject || ""}
+                                    onChange={(e) => updateNodeConfig("subject", e.target.value)}
+                                    placeholder="Hello {{trigger.name}}"
+                                    className="config-field"
+                                    style={{ ...fieldBase }}
+                                />
+                            </ConfigField>
+
+                            <ConfigField label="Body">
+                                <textarea
+                                    value={selectedNode.data.config.body || ""}
+                                    onChange={(e) => updateNodeConfig("body", e.target.value)}
+                                    placeholder="Write email body here..."
+                                    className="config-field"
+                                    style={{
+                                        ...fieldBase,
+                                        height: 150,
+                                        resize: "vertical",
+                                        lineHeight: 1.6,
+                                    }}
+                                />
+                            </ConfigField>
+                        </>
+                    )}
+
+
 
                     {/* Delete */}
                     <button onClick={deleteSelectedNode} className="delete-btn"
