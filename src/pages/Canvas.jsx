@@ -707,6 +707,7 @@ function Canvas() {
                                 url: "",
                                 method: "GET",
                                 body: "",
+                                timeout_seconds: 15,
                                 retry: {
                                     enabled: false,
                                     max_attempts: 3,
@@ -1086,6 +1087,18 @@ function Canvas() {
                                     placeholder={'{\n  "key": "value"\n}'}
                                     className="config-field"
                                     style={{ ...fieldBase, height: 140, resize: "vertical", fontFamily: T.fontMono, lineHeight: 1.6, fontSize: 12 }} />
+                            </ConfigField>
+                            <ConfigField label="Timeout Seconds">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={selectedNode.data.config.timeout_seconds || 15}
+                                    onChange={(e) =>
+                                        updateNodeConfig("timeout_seconds", Number(e.target.value))
+                                    }
+                                    className="config-field"
+                                    style={{ ...fieldBase }}
+                                />
                             </ConfigField>
                             <ConfigField label="Enable Retry">
                                 <select
