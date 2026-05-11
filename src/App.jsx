@@ -1,11 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Signup from "./Signup";
-import Login from "./Login";
-import Dashboard from "./Dashboard";
-import Canvas from "./Canvas";
-import RunHistory from "./RunHistory";
-import Layout from "./Layout";
-import VerifyEmail from "./VerifyEmail";
+import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
+import VerifyEmail from "./pages/auth/VerifyEmail";
+import { Layout as LayoutIcon } from "lucide-react";
+import Layout from "./components/layout/Layout";
+import Dashboard from "./pages/Dashboard";
+import Canvas from "./pages/Canvas";
+import RunHistory from "./pages/RunHistory";
 
 function App() {
   return (

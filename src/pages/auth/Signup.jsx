@@ -1,6 +1,6 @@
 import { useState } from "react";
-import api from "./service/api";
 import { useNavigate, Link } from "react-router-dom";
+import api from "../../services/api";
 
 // ─── Eye icon SVGs ────────────────────────────────────────────────────────────
 const EyeOpen = () => (

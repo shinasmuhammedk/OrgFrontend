@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "./service/api";
+import api from "../services/api";
 
 function RunHistory() {
   const navigate = useNavigate();

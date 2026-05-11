@@ -30,7 +30,7 @@ import {
     ChevronRight,
     Zap,
 } from "lucide-react";
-import api from "./service/api";
+import api from "../services/api";
 
 /* ─────────────────────────────────────────
    DESIGN TOKENS
@@ -702,8 +702,17 @@ function Canvas() {
                     : isCondition
                         ? { field: "", operator: "equals", value: "" }
                         : isDelay
-                            ? { duration: 5 }
-                            : { url: "", method: "GET", body: "" },
+                            ? { duration: 5, unit: "second" }
+                            : {
+                                url: "",
+                                method: "GET",
+                                body: "",
+                                retry: {
+                                    enabled: false,
+                                    max_attempts: 3,
+                                    delay_seconds: 2,
+                                },
+                            },
             },
         };
         setNodes((nds) => nds.concat(newNode));
@@ -1078,6 +1087,54 @@ function Canvas() {
                                     className="config-field"
                                     style={{ ...fieldBase, height: 140, resize: "vertical", fontFamily: T.fontMono, lineHeight: 1.6, fontSize: 12 }} />
                             </ConfigField>
+                            <ConfigField label="Enable Retry">
+                                <select
+                                    value={selectedNode.data.config.retry?.enabled ? "true" : "false"}
+                                    onChange={(e) =>
+                                        updateNodeConfig("retry", {
+                                            ...(selectedNode.data.config.retry || {}),
+                                            enabled: e.target.value === "true",
+                                        })
+                                    }
+                                    className="config-field"
+                                    style={{ ...fieldBase }}
+                                >
+                                    <option value="false">Disabled</option>
+                                    <option value="true">Enabled</option>
+                                </select>
+                            </ConfigField>
+
+                            <ConfigField label="Max Attempts">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={selectedNode.data.config.retry?.max_attempts || 1}
+                                    onChange={(e) =>
+                                        updateNodeConfig("retry", {
+                                            ...(selectedNode.data.config.retry || {}),
+                                            max_attempts: Number(e.target.value),
+                                        })
+                                    }
+                                    className="config-field"
+                                    style={{ ...fieldBase }}
+                                />
+                            </ConfigField>
+
+                            <ConfigField label="Delay Seconds">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={selectedNode.data.config.retry?.delay_seconds || 0}
+                                    onChange={(e) =>
+                                        updateNodeConfig("retry", {
+                                            ...(selectedNode.data.config.retry || {}),
+                                            delay_seconds: Number(e.target.value),
+                                        })
+                                    }
+                                    className="config-field"
+                                    style={{ ...fieldBase }}
+                                />
+                            </ConfigField>
                         </>
                     )}
 
@@ -1104,17 +1161,35 @@ function Canvas() {
 
 
                     {selectedNode.type === "delayNode" && (
-                        <ConfigField label="Duration (seconds)">
-                            <input
-                                type="number"
-                                value={selectedNode.data.config.duration || 0}
-                                onChange={(e) =>
-                                    updateNodeConfig("duration", Number(e.target.value))
-                                }
-                                className="config-field"
-                                style={{ ...fieldBase }}
-                            />
-                        </ConfigField>
+                        <>
+                            <ConfigField label="Duration">
+                                <input
+                                    type="number"
+                                    value={selectedNode.data.config.duration || 0}
+                                    onChange={(e) =>
+                                        updateNodeConfig("duration", Number(e.target.value))
+                                    }
+                                    className="config-field"
+                                    style={{ ...fieldBase }}
+                                />
+                            </ConfigField>
+
+                            <ConfigField label="Unit">
+                                <select
+                                    value={selectedNode.data.config.unit || "second"}
+                                    onChange={(e) =>
+                                        updateNodeConfig("unit", e.target.value)
+                                    }
+                                    className="config-field"
+                                    style={{ ...fieldBase }}
+                                >
+                                    <option value="second">Seconds</option>
+                                    <option value="minute">Minutes</option>
+                                    <option value="hour">Hours</option>
+                                    <option value="day">Days</option>
+                                </select>
+                            </ConfigField>
+                        </>
                     )}
 
                     {/* Delete */}
