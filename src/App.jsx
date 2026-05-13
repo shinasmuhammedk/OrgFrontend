@@ -7,6 +7,7 @@ import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Canvas from "./pages/Canvas";
 import RunHistory from "./pages/RunHistory";
+import Hero from "./pages/Hero";
 
 function App() {
   return (
@@ -24,7 +25,7 @@ function App() {
           <Route path="/workflows/:id/canvas" element={<Canvas />} />
           <Route path="/workflow-runs/:id" element={<RunHistory />} />
 
-          <Route path="/services" element={<Dashboard />} />
+          <Route path="/services" element={<Hero />} />
           <Route path="/graphql" element={<Dashboard />} />
           <Route path="/integrations" element={<Dashboard />} />
         </Route>
