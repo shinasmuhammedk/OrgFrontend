@@ -14,13 +14,13 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Routes WITHOUT Navbar */}
-        <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* Routes WITH Navbar */}
         <Route element={<Layout />}>
+          <Route path="/" element={<Hero />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/workflows/:id/canvas" element={<Canvas />} />
           <Route path="/workflow-runs/:id" element={<RunHistory />} />

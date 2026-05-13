@@ -52,27 +52,27 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
                         stepType === "webhook_trigger"
                             ? "webhookTrigger"
                             : stepType === "condition"
-                            ? "conditionNode"
-                            : stepType === "delay"
-                            ? "delayNode"
-                            : stepType === "email"
-                            ? "emailNode"
-                            : "httpRequest",
+                                ? "conditionNode"
+                                : stepType === "delay"
+                                    ? "delayNode"
+                                    : stepType === "email"
+                                        ? "emailNode"
+                                        : "httpRequest",
                     position: {
-                        x: 250 + (index % 3) * 300,
-                        y: 150 + Math.floor(index / 3) * 220,
+                        x: Number(step.PositionX ?? step.position_x ?? 250 + (index % 3) * 300),
+                        y: Number(step.PositionY ?? step.position_y ?? 150 + Math.floor(index / 3) * 220),
                     },
                     data: {
                         label:
                             stepType === "webhook_trigger"
                                 ? "Webhook Trigger"
                                 : stepType === "condition"
-                                ? "Condition"
-                                : stepType === "delay"
-                                ? "Delay"
-                                : stepType === "email"
-                                ? "Email"
-                                : "HTTP Request",
+                                    ? "Condition"
+                                    : stepType === "delay"
+                                        ? "Delay"
+                                        : stepType === "email"
+                                            ? "Email"
+                                            : "HTTP Request",
                         dbStepId: String(step.ID || step.id || ""),
                         status: "idle",
                         config: step.Config || step.config || {},
@@ -112,15 +112,15 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
             nds.map((node) =>
                 node.id === selectedNode.id
                     ? {
-                          ...node,
-                          data: {
-                              ...node.data,
-                              config: {
-                                  ...node.data.config,
-                                  [key]: value,
-                              },
-                          },
-                      }
+                        ...node,
+                        data: {
+                            ...node.data,
+                            config: {
+                                ...node.data.config,
+                                [key]: value,
+                            },
+                        },
+                    }
                     : node
             )
         );
@@ -160,32 +160,32 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
                     label: isWebhook
                         ? "Webhook Trigger"
                         : isCondition
-                        ? "Condition"
-                        : isDelay
-                        ? "Delay"
-                        : isEmail
-                        ? "Email"
-                        : "HTTP Request",
+                            ? "Condition"
+                            : isDelay
+                                ? "Delay"
+                                : isEmail
+                                    ? "Email"
+                                    : "HTTP Request",
                     status: "idle",
                     config: isWebhook
                         ? {}
                         : isCondition
-                        ? { field: "", operator: "equals", value: "" }
-                        : isDelay
-                        ? { duration: 5, unit: "second" }
-                        : isEmail
-                        ? { to: "", subject: "", body: "" }
-                        : {
-                              url: "",
-                              method: "GET",
-                              body: "",
-                              timeout_seconds: 15,
-                              retry: {
-                                  enabled: false,
-                                  max_attempts: 3,
-                                  delay_seconds: 2,
-                              },
-                          },
+                            ? { field: "", operator: "equals", value: "" }
+                            : isDelay
+                                ? { duration: 5, unit: "second" }
+                                : isEmail
+                                    ? { to: "", subject: "", body: "" }
+                                    : {
+                                        url: "",
+                                        method: "GET",
+                                        body: "",
+                                        timeout_seconds: 15,
+                                        retry: {
+                                            enabled: false,
+                                            max_attempts: 3,
+                                            delay_seconds: 2,
+                                        },
+                                    },
                 },
             };
 
@@ -226,13 +226,15 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
                     node.type === "webhookTrigger"
                         ? "webhook_trigger"
                         : node.type === "conditionNode"
-                        ? "condition"
-                        : node.type === "delayNode"
-                        ? "delay"
-                        : node.type === "emailNode"
-                        ? "email"
-                        : "http_request",
+                            ? "condition"
+                            : node.type === "delayNode"
+                                ? "delay"
+                                : node.type === "emailNode"
+                                    ? "email"
+                                    : "http_request",
                 config: node.data.config,
+                position_x: node.position.x,
+                position_y: node.position.y,
             }));
 
             const workflowEdges = edges.map((edge) => ({
@@ -242,8 +244,8 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
                     edge.sourceHandle === "true"
                         ? "true"
                         : edge.sourceHandle === "false"
-                        ? "false"
-                        : "",
+                            ? "false"
+                            : "",
             }));
 
             await api.saveWorkflowSteps(workflowId, steps, workflowEdges);
