@@ -28,7 +28,7 @@ import { useWorkflowExecution } from "../features/workflow/hooks/useWorkflowExec
 import { GLOBAL_WORKFLOW_STYLES } from "../features/workflow/utils/workflowStyles";
 
 import { useToast } from "../features/workflow/hooks/useToast";
-
+import WorkflowSchedulePanel from "../features/workflow/components/WorkflowSchedulePanel";
 
 
 function Canvas() {
@@ -247,7 +247,9 @@ function Canvas() {
                     </button>
                 </div>
             </div>
-
+            <div style={{ maxWidth: "520px", marginBottom: "20px" }}>
+                <WorkflowSchedulePanel workflowId={id} />
+            </div>
             {error && (
                 <div
                     style={{
