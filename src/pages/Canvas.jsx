@@ -36,6 +36,7 @@ function Canvas() {
     const { id } = useParams();
 
     const [error, setError] = useState("");
+    const [liveLogs, setLiveLogs] = useState([]);
 
     const {
         toast,
@@ -102,6 +103,54 @@ function Canvas() {
 
         loadPageData();
     }, [id, navigate]);
+
+    useEffect(() => {
+        if (!id) return;
+
+        const eventSource = new EventSource(
+            `http://localhost:8080/workflows/${id}/events`
+        );
+
+        eventSource.addEventListener("workflow_update", (event) => {
+            const data = JSON.parse(event.data);
+
+            setLiveLogs((logs) => [
+                ...logs,
+                {
+                    id: Date.now() + Math.random(),
+                    time: new Date().toLocaleTimeString(),
+                    status: data.status,
+                    message: data.message || `${data.step_type || "Step"} ${data.status}`,
+                },
+
+            ]);
+
+            console.log("sse update recieved", data)
+
+            setNodes((currentNodes) =>
+                currentNodes.map((node) =>
+                    node.data.backendStepId === data.step_id
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                status: data.status,
+                                error: data.error || null,
+                            },
+                        }
+                        : node
+                )
+            );
+        });
+
+        eventSource.onerror = () => {
+            console.log("SSE connection error");
+        };
+
+        return () => {
+            eventSource.close();
+        };
+    }, [id, setNodes]);
 
     const CONFIG_W = 370;
 
@@ -344,6 +393,50 @@ function Canvas() {
                         </Panel>
                     </ReactFlow>
                 </div>
+            </div>
+            <div
+                style={{
+                    background: T.panel,
+                    border: `1px solid ${T.border}`,
+                    borderRadius: T.radius,
+                    padding: 18,
+                    marginTop: 24,
+                    marginBottom: 24,
+                }}
+            >
+                <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>
+                    Live Execution Logs
+                </h3>
+
+                {liveLogs.length === 0 ? (
+                    <p style={{ color: T.textDim, fontSize: 13 }}>
+                        Run a workflow to see live execution logs.
+                    </p>
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {liveLogs.map((log) => (
+                            <div
+                                key={log.id}
+                                style={{
+                                    fontFamily: T.fontMono,
+                                    fontSize: 12,
+                                    color:
+                                        log.status === "success"
+                                            ? T.success
+                                            : log.status === "failed"
+                                                ? T.danger
+                                                : T.running,
+                                    background: "rgba(255,255,255,0.03)",
+                                    border: `1px solid ${T.borderSoft}`,
+                                    borderRadius: 10,
+                                    padding: "9px 12px",
+                                }}
+                            >
+                                [{log.time}] {log.message}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <RunHistoryList

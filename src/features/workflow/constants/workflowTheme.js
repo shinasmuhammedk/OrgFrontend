@@ -12,7 +12,7 @@ export const T = {
     success: "#22c55e",
     danger: "#ef4444",
     warning: "#f59e0b",
-    running: "#3b82f6",
+    running: "#facc15",
     radius: 18,
     shadow: "0 10px 30px rgba(0,0,0,0.35)",
     fontMono: "ui-monospace, SFMono-Regular, Menlo, monospace",
@@ -48,23 +48,22 @@ export const nodeShell = (selected, status) => ({
     borderRadius: 20,
     overflow: "hidden",
     background: "linear-gradient(180deg,#10131b 0%, #0c0f16 100%)",
-    border: `1px solid ${
-        status === "success"
+    border: `1px solid ${status === "success"
             ? "rgba(34,197,94,0.55)"
             : status === "error"
-            ? "rgba(239,68,68,0.6)"
-            : status === "running"
-            ? "rgba(59,130,246,0.65)"
-            : selected
-            ? "rgba(200,255,68,0.55)"
-            : T.border
-    }`,
+                ? "rgba(239,68,68,0.6)"
+                : status === "running"
+                    ? "rgba(250,204,21,0.7)"
+                    : selected
+                        ? "rgba(200,255,68,0.55)"
+                        : T.border
+        }`,
     boxShadow:
         status === "running"
-            ? "0 0 0 1px rgba(59,130,246,0.5), 0 0 28px rgba(59,130,246,0.25)"
+            ? "0 0 0 1px rgba(250,204,21,0.5), 0 0 28px rgba(250,204,21,0.25)"
             : selected
-            ? "0 0 0 1px rgba(200,255,68,0.35), 0 0 28px rgba(200,255,68,0.15)"
-            : T.shadow,
+                ? "0 0 0 1px rgba(200,255,68,0.35), 0 0 28px rgba(200,255,68,0.15)"
+                : T.shadow,
     transition: "all .2s ease",
     position: "relative",
 });
