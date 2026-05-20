@@ -22,7 +22,6 @@ import NodeConfigPanel from "../features/workflow/components/NodeConfigPanel";
 import RunHistoryList from "../features/workflow/components/RunHistoryList";
 import { useWorkflowCanvas } from "../features/workflow/hooks/useWorkflowCanvas";
 import { T } from "../features/workflow/constants/workflowTheme";
-import { useWorkflowRuns } from "../features/workflow/hooks/useWorkflowRuns";
 import { useWorkflowExecution } from "../features/workflow/hooks/useWorkflowExecution";
 
 import { GLOBAL_WORKFLOW_STYLES } from "../features/workflow/utils/workflowStyles";
