@@ -25,6 +25,15 @@ function Hero() {
 
   const isVisible = (id) => visibleSections.has(id);
 
+  const handleStartBuilding = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard");
+    } else {
+      navigate("/login");
+    }
+  };
+
   const features = [
     {
       title: "Visual Canvas Builder",
@@ -666,7 +675,7 @@ function Hero() {
             </p>
 
             <div className="hero-cta-group">
-              <button className="btn-primary" onClick={() => navigate("/login")}>
+              <button className="btn-primary" onClick={handleStartBuilding}>
                 Start Building Free →
               </button>
               <button className="btn-secondary" onClick={() => navigate("/dashboard")}>
@@ -889,7 +898,7 @@ function Hero() {
               No credit card required. Get 500 free runs per month on the Starter plan. Upgrade when you scale.
             </p>
             <div className="hero-cta-group" style={{ position: 'relative', zIndex: 1 }}>
-              <button className="btn-primary" onClick={() => navigate("/login")}>
+              <button className="btn-primary" onClick={handleStartBuilding}>
                 Create Free Account →
               </button>
               <button className="btn-secondary" onClick={() => navigate("/dashboard")}>

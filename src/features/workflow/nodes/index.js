@@ -1,5 +1,5 @@
 import HttpRequestNode from "./HttpRequestNode";
-import WebHookTriggerNode from "./WebHookTriggerNode";
+import WebhookTriggerNode from "./WebHookTriggerNode";
 import ConditionNode from "./ConditionNode";
 import DelayNode from "./DelayNode";
 import EmailNode from "./EmailNode";

@@ -277,7 +277,7 @@ function Login() {
             localStorage.setItem("token", data.data.access_token);
             localStorage.setItem("user", JSON.stringify(data.user));
 
-            navigate("/dashboard");
+            navigate("/");
         } catch (err) {
             setError(err.message);
             triggerShake();

@@ -39,6 +39,21 @@ class ApiService {
         return data;
     }
 
+    get(endpoint) {
+        return this.request(endpoint, {
+            method: "GET",
+            headers: this.getAuthHeaders(),
+        });
+    }
+
+    post(endpoint, body) {
+        return this.request(endpoint, {
+            method: "POST",
+            headers: this.getAuthHeaders(),
+            body: body ? JSON.stringify(body) : undefined,
+        });
+    }
+
     signup(email, password, name) {
         return this.request("/signup", {
             method: "POST",

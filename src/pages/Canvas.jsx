@@ -23,6 +23,7 @@ import RunHistoryList from "../features/workflow/components/RunHistoryList";
 import { useWorkflowCanvas } from "../features/workflow/hooks/useWorkflowCanvas";
 import { T } from "../features/workflow/constants/workflowTheme";
 import { useWorkflowExecution } from "../features/workflow/hooks/useWorkflowExecution";
+import { useWorkflowRuns } from "../features/workflow/hooks/useWorkflowRuns";
 
 import { GLOBAL_WORKFLOW_STYLES } from "../features/workflow/utils/workflowStyles";
 
@@ -295,9 +296,11 @@ function Canvas() {
                     </button>
                 </div>
             </div>
+
             <div style={{ maxWidth: "520px", marginBottom: "20px" }}>
                 <WorkflowSchedulePanel workflowId={id} />
             </div>
+
             {error && (
                 <div
                     style={{
@@ -393,6 +396,7 @@ function Canvas() {
                     </ReactFlow>
                 </div>
             </div>
+
             <div
                 style={{
                     background: T.panel,

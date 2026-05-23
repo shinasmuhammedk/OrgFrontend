@@ -350,7 +350,7 @@ function Signup() {
         setSuccess(data.message || "Signup successful. Please verify your email.");
         return;
       }
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
       setError(err.message || "Signup failed");
     } finally {
