@@ -523,7 +523,7 @@ function Signup() {
             <button
               type="button"
               className="org-btn-ghost"
-              onClick={() => window.location.href = "http://localhost:8080/auth/google/start"}
+              onClick={() => window.location.href = "http://localhost:8080/auth/google/login"}
               disabled={loading}
             >
               <GoogleIcon />

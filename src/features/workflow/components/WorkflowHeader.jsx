@@ -1,50 +1,74 @@
-import { Save, Play, Loader2 } from "lucide-react";
+import { Save, Play, Loader2, ArrowLeft, Share2, Rocket } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-export default function WorkflowHeader({ handleSaveWorkflow, saving, handleRunWorkflow, running }) {
+export default function WorkflowHeader({ workflowName = "Untitled Workflow", handleSaveWorkflow, saving, handleRunWorkflow, running }) {
+    const navigate = useNavigate();
+
     return (
-        <div className="flex justify-between items-start mb-7 flex-wrap gap-4">
-            <div>
-                <h1 className="text-white text-3xl font-extrabold m-0">
-                    Workflow Canvas
-                </h1>
-                <p className="text-[#b4b4c7] text-sm leading-relaxed mt-1 mb-0">
-                    Build, connect, save and run your automation workflow
-                </p>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between glass-panel px-4 py-2 w-[calc(100%-2rem)] max-w-5xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+            
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={() => navigate("/dashboard")}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-white/10 hover:text-text-primary transition-colors"
+                    title="Back to Dashboard"
+                >
+                    <ArrowLeft size={16} />
+                </button>
+
+                <div className="h-4 w-px bg-white/10" />
+
+                <div className="flex flex-col">
+                    <div className="text-[14px] font-bold text-text-primary leading-tight font-sans tracking-tight">
+                        {workflowName}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-text-muted mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-success animate-pulse-success" />
+                        Draft Saved • Last run 2m ago
+                    </div>
+                </div>
             </div>
 
-            <div className="flex gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2">
                 <button
                     onClick={handleSaveWorkflow}
                     disabled={saving}
-                    className="flex items-center gap-2 bg-[#1a1a24] text-white border border-[#2a2a35] px-4 py-2.5 rounded-md font-bold text-sm cursor-pointer hover:bg-[#252535] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all disabled:opacity-50"
                 >
-                    {saving ? (
-                        <>
-                            <Loader2 size={15} className="animate-spin" />
-                            Saving…
-                        </>
-                    ) : (
-                        <>
-                            <Save size={15} />
-                            Save Workflow
-                        </>
-                    )}
+                    {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                    Save
                 </button>
+
+                <button
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all"
+                >
+                    <Share2 size={14} />
+                    Share
+                </button>
+
+                <button
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-brand-secondary bg-brand-secondary/10 border border-brand-secondary/20 hover:bg-brand-secondary/20 transition-all"
+                >
+                    <Rocket size={14} />
+                    Deploy
+                </button>
+
+                <div className="h-4 w-px bg-white/10 mx-1" />
 
                 <button
                     onClick={handleRunWorkflow}
                     disabled={running}
-                    className="flex items-center gap-2 bg-[#00e599] text-[#07070d] border-none px-5 py-2.5 rounded-md font-extrabold text-sm cursor-pointer hover:bg-[#00c985] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold bg-brand-primary text-white shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:transform-none"
                 >
                     {running ? (
                         <>
-                            <Loader2 size={15} className="animate-spin" />
+                            <Loader2 size={14} className="animate-spin" />
                             Running…
                         </>
                     ) : (
                         <>
-                            <Play size={15} fill="currentColor" />
-                            Run Workflow
+                            <Play size={14} fill="currentColor" />
+                            Run
                         </>
                     )}
                 </button>

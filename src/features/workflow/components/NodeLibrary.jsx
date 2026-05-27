@@ -1,73 +1,25 @@
+import { useState } from "react";
 import {
     Webhook,
     Globe,
     Mail,
     Clock3,
     GitBranch,
-    Bot,
-    Layers3,
     ChevronRight,
-    Zap,
+    Layers,
+    ChevronLeft
 } from "lucide-react";
 
-import { T } from "../constants/workflowTheme";
-
-const PaletteNode = ({
-    icon: Icon,
-    title,
-    sub,
-    onDragStart,
-    disabled,
-}) => {
+const PaletteNode = ({ icon: Icon, title, type, onDragStart, disabled, colorClass }) => {
     if (disabled) {
         return (
-            <div
-                style={{
-                    background: T.bg,
-                    border: `1px solid ${T.border}`,
-                    borderRadius: T.radius,
-                    padding: "14px 16px",
-                    marginBottom: 10,
-                    opacity: 0.45,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                }}
-            >
-                <div
-                    style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 9,
-                        background: T.surface,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}
-                >
-                    <Icon size={16} color={T.textDim} />
+            <div className="flex items-center gap-3 p-2.5 rounded-xl border border-white/5 bg-white/5 opacity-50 mb-2 cursor-not-allowed">
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                    <Icon size={14} className="text-text-muted" />
                 </div>
-
                 <div>
-                    <div
-                        style={{
-                            color: T.textMid,
-                            fontWeight: 600,
-                            fontSize: 13,
-                        }}
-                    >
-                        {title}
-                    </div>
-
-                    <div
-                        style={{
-                            color: T.textDim,
-                            fontSize: 11,
-                            marginTop: 2,
-                        }}
-                    >
-                        Coming soon
-                    </div>
+                    <div className="text-xs font-bold text-text-muted">{title}</div>
+                    <div className="text-[10px] text-text-muted/60 mt-0.5">Coming soon</div>
                 </div>
             </div>
         );
@@ -76,217 +28,71 @@ const PaletteNode = ({
     return (
         <button
             draggable
-            onDragStart={onDragStart}
-            className="node-palette"
-            style={{
-                width: "100%",
-                background: T.accentDim,
-                border: `1px solid rgba(200,255,68,0.2)`,
-                borderRadius: T.radius,
-                padding: "14px 16px",
-                marginBottom: 10,
-                cursor: "grab",
-                textAlign: "left",
-                transition:
-                    "all 0.2s cubic-bezier(0.4,0,0.2,1)",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-            }}
+            onDragStart={(e) => onDragStart(e, type)}
+            className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-grab mb-2 group text-left"
         >
-            <div
-                style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 9,
-                    background: "rgba(200,255,68,0.15)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                }}
-            >
-                <Icon size={16} color={T.accent} />
+            <div className={`w-8 h-8 rounded-lg bg-${colorClass}/10 flex items-center justify-center shrink-0 group-hover:shadow-[0_0_10px_currentColor] transition-shadow text-${colorClass}`}>
+                <Icon size={14} />
             </div>
-
-            <div style={{ flex: 1 }}>
-                <div
-                    style={{
-                        color: T.text,
-                        fontWeight: 700,
-                        fontSize: 13,
-                    }}
-                >
-                    {title}
-                </div>
-
-                <div
-                    style={{
-                        color: T.textMid,
-                        fontSize: 11,
-                        marginTop: 2,
-                    }}
-                >
-                    {sub}
-                </div>
+            <div className="flex-1">
+                <div className="text-xs font-bold text-text-primary tracking-tight">{title}</div>
             </div>
-
-            <ChevronRight size={14} color={T.textDim} />
+            <ChevronRight size={14} className="text-text-muted group-hover:text-text-primary transition-colors opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0" />
         </button>
     );
 };
 
-const sectionTitleStyle = {
-    fontSize: 10,
-    color: T.textDim,
-    textTransform: "uppercase",
-    letterSpacing: "1px",
-    fontWeight: 600,
-    marginBottom: 10,
-};
+export default function NodeLibrary({ onDragStart }) {
+    const [expanded, setExpanded] = useState(true);
 
-function NodeLibrary({ onDragStart }) {
     return (
-        <div
-            style={{
-                background: T.surface,
-                border: `1px solid ${T.border}`,
-                borderRadius: T.radiusXl,
-                padding: 18,
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-            }}
-        >
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    marginBottom: 20,
-                }}
-            >
-                <Layers3 size={16} color={T.accent} />
+        <div className={`absolute top-24 left-4 z-40 transition-all duration-300 ease-in-out ${expanded ? "w-[240px]" : "w-[60px]"}`}>
+            <div className="glass-panel overflow-hidden h-[calc(100vh-140px)] flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                
+                {/* Header */}
+                <div className="p-4 flex items-center justify-between border-b border-white/5 shrink-0 bg-white/5">
+                    {expanded && (
+                        <div className="flex items-center gap-2 font-mono font-bold text-xs text-text-primary uppercase tracking-widest">
+                            <Layers size={14} className="text-brand-primary" />
+                            Nodes
+                        </div>
+                    )}
+                    <button 
+                        onClick={() => setExpanded(!expanded)}
+                        className={`w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors ${!expanded ? "mx-auto" : ""}`}
+                    >
+                        <ChevronLeft size={16} className={`transition-transform duration-300 ${!expanded ? "rotate-180" : ""}`} />
+                    </button>
+                </div>
 
-                <span
-                    style={{
-                        color: T.accent,
-                        fontSize: 12,
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                        letterSpacing: "1.2px",
-                    }}
-                >
-                    Node Library
-                </span>
-            </div>
+                {/* Body */}
+                <div className={`p-3 overflow-y-auto flex-1 transition-opacity duration-300 ${expanded ? "opacity-100" : "opacity-0 invisible hidden"}`}>
+                    
+                    <div className="text-[10px] font-bold text-brand-warning uppercase tracking-wider mb-2 ml-1">⚡ Triggers</div>
+                    <PaletteNode icon={Webhook} title="Webhook" type="webhookTrigger" onDragStart={onDragStart} colorClass="brand-warning" />
 
-            <div style={sectionTitleStyle}>Triggers</div>
+                    <div className="text-[10px] font-bold text-brand-secondary uppercase tracking-wider mb-2 mt-4 ml-1">🌐 Actions</div>
+                    <PaletteNode icon={Globe} title="HTTP Request" type="httpRequest" onDragStart={onDragStart} colorClass="brand-secondary" />
+                    <PaletteNode icon={Mail} title="Send Email" type="emailNode" onDragStart={onDragStart} colorClass="brand-tertiary" />
 
-            <PaletteNode
-                icon={Webhook}
-                title="Webhook Trigger"
-                sub="Start workflow externally"
-                onDragStart={(e) =>
-                    onDragStart(e, "webhookTrigger")
-                }
-            />
+                    <div className="text-[10px] font-bold text-brand-primary uppercase tracking-wider mb-2 mt-4 ml-1">🧠 Logic</div>
+                    <PaletteNode icon={GitBranch} title="Condition" type="conditionNode" onDragStart={onDragStart} colorClass="brand-primary" />
 
-            <div
-                style={{
-                    ...sectionTitleStyle,
-                    marginTop: 6,
-                }}
-            >
-                Actions
-            </div>
+                    <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 mt-4 ml-1">⏱ Coming Soon</div>
+                    <PaletteNode icon={Clock3} title="Delay" type="delayNode" onDragStart={onDragStart} colorClass="brand-primary" />
 
-            <PaletteNode
-                icon={Globe}
-                title="HTTP Request"
-                sub="Call APIs & endpoints"
-                onDragStart={(e) =>
-                    onDragStart(e, "httpRequest")
-                }
-            />
+                </div>
 
-            <PaletteNode
-                icon={Mail}
-                title="Email"
-                sub="Send email notification"
-                onDragStart={(e) =>
-                    onDragStart(e, "emailNode")
-                }
-            />
-
-            <div
-                style={{
-                    ...sectionTitleStyle,
-                    marginTop: 6,
-                }}
-            >
-                Logic
-            </div>
-
-            <PaletteNode
-                icon={GitBranch}
-                title="Condition"
-                sub="Branch workflow logic"
-                onDragStart={(e) =>
-                    onDragStart(e, "conditionNode")
-                }
-            />
-
-            <div
-                style={{
-                    ...sectionTitleStyle,
-                    marginTop: 6,
-                }}
-            >
-                Coming Soon
-            </div>
-
-            <PaletteNode
-                icon={Clock3}
-                title="Delay"
-                sub="Wait before continuing"
-                onDragStart={(e) =>
-                    onDragStart(e, "delayNode")
-                }
-            />
-
-            <PaletteNode
-                icon={Bot}
-                title="AI Node"
-                sub="LLM-powered step"
-                disabled
-            />
-
-            <div
-                style={{
-                    marginTop: "auto",
-                    paddingTop: 16,
-                    borderTop: `1px solid ${T.border}`,
-                    fontSize: 11,
-                    color: T.textDim,
-                    textAlign: "center",
-                    lineHeight: 1.5,
-                }}
-            >
-                <Zap
-                    size={12}
-                    style={{
-                        display: "inline",
-                        marginRight: 4,
-                        verticalAlign: "middle",
-                        color: T.accent,
-                    }}
-                />
-
-                Drag nodes onto the canvas
+                {/* Collapsed view icons */}
+                {!expanded && (
+                    <div className="flex flex-col items-center gap-4 py-4 opacity-100 transition-opacity duration-300">
+                        <Webhook size={18} className="text-brand-warning opacity-60 hover:opacity-100 cursor-pointer" onClick={() => setExpanded(true)} />
+                        <Globe size={18} className="text-brand-secondary opacity-60 hover:opacity-100 cursor-pointer" onClick={() => setExpanded(true)} />
+                        <Mail size={18} className="text-brand-tertiary opacity-60 hover:opacity-100 cursor-pointer" onClick={() => setExpanded(true)} />
+                        <GitBranch size={18} className="text-brand-primary opacity-60 hover:opacity-100 cursor-pointer" onClick={() => setExpanded(true)} />
+                    </div>
+                )}
             </div>
         </div>
     );
 }
-
-export default NodeLibrary;

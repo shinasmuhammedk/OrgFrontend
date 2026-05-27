@@ -11,6 +11,7 @@ import Billing from "./pages/Billing";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import OAuthCallback from "./pages/OAuthCallback";
 
 function App() {
     return (
@@ -19,6 +20,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/oauth/callback" element={<OAuthCallback />} />
 
                 {/* Full-screen routes without Navbar */}
                 <Route path="/workflows/:id/canvas" element={<Canvas />} />
