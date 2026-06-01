@@ -3,6 +3,7 @@ import WebhookTriggerNode from "./WebHookTriggerNode";
 import ConditionNode from "./ConditionNode";
 import DelayNode from "./DelayNode";
 import EmailNode from "./EmailNode";
+import AINode from "./AINode";
 
 export const nodeTypes = {
     httpRequest: HttpRequestNode,
@@ -10,4 +11,5 @@ export const nodeTypes = {
     conditionNode: ConditionNode,
     delayNode: DelayNode,
     emailNode: EmailNode,
+    aiNode : AINode
 };

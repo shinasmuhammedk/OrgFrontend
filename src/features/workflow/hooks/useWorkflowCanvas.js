@@ -57,7 +57,9 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
                                     ? "delayNode"
                                     : stepType === "email"
                                         ? "emailNode"
-                                        : "httpRequest",
+                                        : stepType === "ai"
+                                            ? "aiNode"
+                                            : "httpRequest",
                     position: {
                         x: Number(step.PositionX ?? step.position_x ?? 250 + (index % 3) * 300),
                         y: Number(step.PositionY ?? step.position_y ?? 150 + Math.floor(index / 3) * 220),
@@ -72,7 +74,9 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
                                         ? "Delay"
                                         : stepType === "email"
                                             ? "Email"
-                                            : "HTTP Request",
+                                            : stepType === "ai"
+                                                ? "AI"
+                                                : "HTTP Request",
                         dbStepId: String(step.ID || step.id || ""),
                         status: "idle",
                         config: step.Config || step.config || {},
@@ -151,6 +155,7 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
             const isCondition = type === "conditionNode";
             const isDelay = type === "delayNode";
             const isEmail = type === "emailNode";
+            const isAI = type === "aiNode";
 
             const newNode = {
                 id: nodeId,
@@ -165,7 +170,9 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
                                 ? "Delay"
                                 : isEmail
                                     ? "Email"
-                                    : "HTTP Request",
+                                    : isAI
+                                        ? "AI"
+                                        : "HTTP Request",
                     status: "idle",
                     config: isWebhook
                         ? {}
@@ -175,17 +182,22 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
                                 ? { duration: 5, unit: "second" }
                                 : isEmail
                                     ? { to: "", subject: "", body: "" }
-                                    : {
-                                        url: "",
-                                        method: "GET",
-                                        body: "",
-                                        timeout_seconds: 15,
-                                        retry: {
-                                            enabled: false,
-                                            max_attempts: 3,
-                                            delay_seconds: 2,
+                                    : isAI
+                                        ? {
+                                            prompt: "",
+                                            model: "gemini-2.5-flash",
+                                        }
+                                        : {
+                                            url: "",
+                                            method: "GET",
+                                            body: "",
+                                            timeout_seconds: 15,
+                                            retry: {
+                                                enabled: false,
+                                                max_attempts: 3,
+                                                delay_seconds: 2,
+                                            },
                                         },
-                                    },
                 },
             };
 
@@ -231,7 +243,9 @@ export function useWorkflowCanvas(workflowId, setError, showToast) {
                                 ? "delay"
                                 : node.type === "emailNode"
                                     ? "email"
-                                    : "http_request",
+                                    : node.type === "aiNode"
+                                        ? "ai"
+                                        : "http_request",
                 config: node.data.config,
                 position_x: node.position.x,
                 position_y: node.position.y,

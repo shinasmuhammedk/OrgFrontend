@@ -7,7 +7,8 @@ import {
     GitBranch,
     ChevronRight,
     Layers,
-    ChevronLeft
+    ChevronLeft,
+    Bot
 } from "lucide-react";
 
 const PaletteNode = ({ icon: Icon, title, type, onDragStart, disabled, colorClass }) => {
@@ -48,7 +49,7 @@ export default function NodeLibrary({ onDragStart }) {
     return (
         <div className={`absolute top-24 left-4 z-40 transition-all duration-300 ease-in-out ${expanded ? "w-[240px]" : "w-[60px]"}`}>
             <div className="glass-panel overflow-hidden h-[calc(100vh-140px)] flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                
+
                 {/* Header */}
                 <div className="p-4 flex items-center justify-between border-b border-white/5 shrink-0 bg-white/5">
                     {expanded && (
@@ -57,7 +58,7 @@ export default function NodeLibrary({ onDragStart }) {
                             Nodes
                         </div>
                     )}
-                    <button 
+                    <button
                         onClick={() => setExpanded(!expanded)}
                         className={`w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors ${!expanded ? "mx-auto" : ""}`}
                     >
@@ -67,18 +68,24 @@ export default function NodeLibrary({ onDragStart }) {
 
                 {/* Body */}
                 <div className={`p-3 overflow-y-auto flex-1 transition-opacity duration-300 ${expanded ? "opacity-100" : "opacity-0 invisible hidden"}`}>
-                    
+
                     <div className="text-[10px] font-bold text-brand-warning uppercase tracking-wider mb-2 ml-1">⚡ Triggers</div>
                     <PaletteNode icon={Webhook} title="Webhook" type="webhookTrigger" onDragStart={onDragStart} colorClass="brand-warning" />
 
                     <div className="text-[10px] font-bold text-brand-secondary uppercase tracking-wider mb-2 mt-4 ml-1">🌐 Actions</div>
                     <PaletteNode icon={Globe} title="HTTP Request" type="httpRequest" onDragStart={onDragStart} colorClass="brand-secondary" />
                     <PaletteNode icon={Mail} title="Send Email" type="emailNode" onDragStart={onDragStart} colorClass="brand-tertiary" />
+                    <PaletteNode
+                        icon={Bot}
+                        title="AI"
+                        type="aiNode"
+                        onDragStart={onDragStart}
+                        colorClass="brand-primary"
+                    />
 
                     <div className="text-[10px] font-bold text-brand-primary uppercase tracking-wider mb-2 mt-4 ml-1">🧠 Logic</div>
                     <PaletteNode icon={GitBranch} title="Condition" type="conditionNode" onDragStart={onDragStart} colorClass="brand-primary" />
 
-                    <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 mt-4 ml-1">⏱ Coming Soon</div>
                     <PaletteNode icon={Clock3} title="Delay" type="delayNode" onDragStart={onDragStart} colorClass="brand-primary" />
 
                 </div>
@@ -90,6 +97,7 @@ export default function NodeLibrary({ onDragStart }) {
                         <Globe size={18} className="text-brand-secondary opacity-60 hover:opacity-100 cursor-pointer" onClick={() => setExpanded(true)} />
                         <Mail size={18} className="text-brand-tertiary opacity-60 hover:opacity-100 cursor-pointer" onClick={() => setExpanded(true)} />
                         <GitBranch size={18} className="text-brand-primary opacity-60 hover:opacity-100 cursor-pointer" onClick={() => setExpanded(true)} />
+                        <Bot size={18} className="text-brand-primary opacity-60 hover:opacity-100 cursor-pointer" onClick={() => setExpanded(true)} />
                     </div>
                 )}
             </div>

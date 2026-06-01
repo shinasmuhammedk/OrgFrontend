@@ -1,6 +1,115 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+
+function Counter({ target }) {
+    const [val, setVal] = useState(0);
+    useEffect(() => {
+        const frames = 40;
+        let i = 0;
+        const id = setInterval(() => {
+            i++;
+            setVal(Math.min(target, Math.round((target * i) / frames)));
+            if (i >= frames) clearInterval(id);
+        }, 16);
+        return () => clearInterval(id);
+    }, [target]);
+    return <span>{val}</span>;
+}
+
+/* ── Isolated three-dot menu: manages its own state, no bubbling issues ── */
+function RowMenu({ workflow, onRename, onDelete }) {
+    const [open, setOpen] = useState(false);
+    const containerRef = useRef(null);
+
+    // Close on outside click using native events (bypasses React bubbling)
+    useEffect(() => {
+        if (!open) return;
+        const close = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setOpen(false);
+            }
+        };
+        // Use capture phase so this fires before anything else
+        document.addEventListener("click", close, true);
+        return () => document.removeEventListener("click", close, true);
+    }, [open]);
+
+    const handleButtonClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen((prev) => !prev);
+    };
+
+    const handleRename = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+        onRename(workflow);
+    };
+
+    const handleDelete = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+        onDelete(workflow);
+    };
+
+    return (
+        <div
+            ref={containerRef}
+            style={{ position: "relative", display: "flex", alignItems: "center" }}
+            // Swallow ALL click events from this cell — nothing reaches the row
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        >
+            <button
+                type="button"
+                style={{ ...S.iconBtn, ...(open ? S.iconBtnActive : {}) }}
+                className="m-icon-btn"
+                onClick={handleButtonClick}
+                title="More options"
+            >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="19" cy="12" r="2" />
+                </svg>
+            </button>
+
+            {open && (
+                <div style={S.menu}>
+                    <button
+                        type="button"
+                        style={S.menuItem}
+                        className="m-menu-item"
+                        onClick={handleRename}
+                    >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 8, flexShrink: 0 }}>
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        Rename
+                    </button>
+                    <div style={S.menuDivider} />
+                    <button
+                        type="button"
+                        style={{ ...S.menuItem, ...S.menuItemDanger }}
+                        className="m-menu-item-danger"
+                        onClick={handleDelete}
+                    >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 8, flexShrink: 0 }}>
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14H6L5 6" />
+                            <path d="M10 11v6M14 11v6" />
+                            <path d="M9 6V4h6v2" />
+                        </svg>
+                        Delete
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
 
 function Dashboard() {
     const navigate = useNavigate();
@@ -12,16 +121,17 @@ function Dashboard() {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState("all");
     const [sortBy, setSortBy] = useState("newest");
-    // New states for rename workflow
     const [selectedWorkflow, setSelectedWorkflow] = useState(null);
     const [showRenameModal, setShowRenameModal] = useState(false);
     const [renameName, setRenameName] = useState("");
     const [renameDescription, setRenameDescription] = useState("");
     const [renaming, setRenaming] = useState(false);
-    const [menuOpenId, setMenuOpenId] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [workflowName, setWorkflowName] = useState("");
     const [workflowDescription, setWorkflowDescription] = useState("");
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => { setTimeout(() => setMounted(true), 30); }, []);
 
     const fetchWorkflows = async () => {
         try {
@@ -33,110 +143,95 @@ function Dashboard() {
             setFilteredWorkflows(data);
         } catch (err) {
             setError(err.message || "Failed to load workflows");
-            console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCreateWorkflow = () => {
-        // Open the create workflow modal
-        setShowCreateModal(true);
-        // Reset fields
-        setWorkflowName("");
-        setWorkflowDescription("");
-    };
-
     const handleRenameWorkflow = async () => {
-        if (!selectedWorkflow) return;
-        if (!renameName.trim()) {
-            setError("Workflow name cannot be empty.");
-            return;
-        }
+        if (!selectedWorkflow || !renameName.trim()) return;
         try {
             setRenaming(true);
-            setError("");
-            const payload = {
-                name: renameName.trim(),
-                description: renameDescription.trim() || undefined,
-            };
-            const res = await api.updateWorkflow(selectedWorkflow.id || selectedWorkflow.ID, payload);
-            // Update UI without reload
+            const payload = { name: renameName.trim(), description: renameDescription.trim() || undefined };
+            await api.updateWorkflow(selectedWorkflow.id || selectedWorkflow.ID, payload);
             setWorkflows((prev) =>
                 prev.map((wf) =>
-                    wf.id === (selectedWorkflow.id || selectedWorkflow.ID) || wf.ID === (selectedWorkflow.id || selectedWorkflow.ID)
+                    (wf.id || wf.ID) === (selectedWorkflow.id || selectedWorkflow.ID)
                         ? { ...wf, Name: payload.name, Description: { String: payload.description } }
                         : wf
                 )
             );
             setShowRenameModal(false);
         } catch (err) {
-            setError(err.message || "Failed to rename workflow");
-            console.error(err);
+            setError(err.message || "Failed to rename");
         } finally {
             setRenaming(false);
         }
     };
 
     const submitCreateWorkflow = async () => {
-        if (!workflowName.trim()) {
-            setError("Workflow name is required.");
-            return;
-        }
+        if (!workflowName.trim()) return;
         try {
             setCreating(true);
-            setError("");
-            const payload = {
-                name: workflowName.trim(),
-                description: workflowDescription.trim() || undefined,
-            };
+            const payload = { name: workflowName.trim(), description: workflowDescription.trim() || undefined };
             const res = await api.createWorkflow(payload);
             const workflowId = res.data?.id || res.data?.ID || res.id || res.ID;
             setShowCreateModal(false);
             navigate(`/workflows/${workflowId}/canvas`);
         } catch (err) {
-            setError(err.message || "Failed to create workflow");
-            console.error(err);
+            setError(err.message || "Failed to create");
         } finally {
             setCreating(false);
         }
     };
 
+    const openRename = useCallback((workflow) => {
+        const name = workflow.Name || workflow.name || "Untitled";
+        const desc = workflow.Description?.String || workflow.description || "";
+        setSelectedWorkflow(workflow);
+        setRenameName(name);
+        setRenameDescription(desc === "—" ? "" : desc);
+        setShowRenameModal(true);
+    }, []);
+
+    const handleDelete = useCallback(async (workflow) => {
+        const wfId = workflow.ID || workflow.id;
+        const name = workflow.Name || workflow.name || "Untitled";
+        if (!window.confirm(`Delete "${name}"?`)) return;
+        try {
+            await api.deleteWorkflow(wfId);
+            setWorkflows((p) => p.filter((w) => (w.id || w.ID) !== wfId));
+        } catch (err) {
+            setError(err.message || "Failed to delete");
+        }
+    }, []);
+
     useEffect(() => {
         const token = localStorage.getItem("token");
-        if (!token) {
-            navigate("/login");
-            return;
-        }
+        if (!token) { navigate("/login"); return; }
         fetchWorkflows();
     }, [navigate]);
 
-    // Filter & Sort
     useEffect(() => {
         let result = [...workflows];
-
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
-            result = result.filter(
-                (w) =>
-                    (w.Name || w.name || "").toLowerCase().includes(q) ||
-                    (w.Description?.String || w.description || "").toLowerCase().includes(q)
+            result = result.filter((w) =>
+                (w.Name || w.name || "").toLowerCase().includes(q) ||
+                (w.Description?.String || w.description || "").toLowerCase().includes(q)
             );
         }
-
         if (filterStatus !== "all") {
             result = result.filter((w) => {
                 const isActive = w.IsActive || w.is_active;
                 return filterStatus === "active" ? isActive : !isActive;
             });
         }
-
         result.sort((a, b) => {
-            const dateA = new Date(a.CreatedAt || a.created_at || 0);
-            const dateB = new Date(b.CreatedAt || b.created_at || 0);
-            return sortBy === "newest" ? dateB - dateA : dateA - dateB;
+            const dA = new Date(a.CreatedAt || a.created_at || 0);
+            const dB = new Date(b.CreatedAt || b.created_at || 0);
+            return sortBy === "newest" ? dB - dA : dA - dB;
         });
-
         setFilteredWorkflows(result);
     }, [workflows, searchQuery, filterStatus, sortBy]);
 
@@ -146,396 +241,269 @@ function Dashboard() {
         inactive: workflows.filter((w) => !(w.IsActive || w.is_active)).length,
     };
 
-    const formatDate = (dateStr) => {
-        if (!dateStr) return "—";
-        const d = new Date(dateStr);
-        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const formatDate = (d) => {
+        if (!d) return "—";
+        return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     };
 
-    const formatTimeAgo = (dateStr) => {
-        if (!dateStr) return "—";
-        const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000);
-        if (seconds < 60) return "Just now";
-        const minutes = Math.floor(seconds / 60);
-        if (minutes < 60) return `${minutes}m ago`;
-        const hours = Math.floor(minutes / 60);
-        if (hours < 24) return `${hours}h ago`;
-        const days = Math.floor(hours / 24);
-        return `${days}d ago`;
+    const formatTimeAgo = (d) => {
+        if (!d) return "—";
+        const s = Math.floor((new Date() - new Date(d)) / 1000);
+        if (s < 60) return "just now";
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m}m ago`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h}h ago`;
+        return `${Math.floor(h / 24)}d ago`;
     };
+
+    const closeModals = () => { setShowCreateModal(false); setShowRenameModal(false); };
 
     return (
-        <div className="min-h-screen bg-bg-dark text-text-primary p-6 md:p-8 mesh-bg">
-            <div className="max-w-[1200px] mx-auto">
+        <div style={S.root}>
+            <style>{CSS}</style>
 
-                {/* Modal for renaming a workflow */}
-                {showRenameModal && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50">
-                        <div className="w-full max-w-md bg-bg-dark rounded-xl shadow-xl p-6 border border-white/10">
-                            <h2 className="text-xl font-bold text-text-primary mb-4">Rename Workflow</h2>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-text-muted mb-1" htmlFor="rename-workflow-name">
-                                        Name<span className="text-brand-danger ml-1">*</span>
-                                    </label>
-                                    <input
-                                        id="rename-workflow-name"
-                                        type="text"
-                                        className="w-full px-3 py-2 text-sm bg-bg-panel border border-white/20 rounded focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-                                        value={renameName}
-                                        onChange={(e) => setRenameName(e.target.value)}
-                                        placeholder="Workflow name"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-text-muted mb-1" htmlFor="rename-workflow-desc">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        id="rename-workflow-desc"
-                                        rows={3}
-                                        className="w-full px-3 py-2 text-sm bg-bg-panel border border-white/20 rounded focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-                                        value={renameDescription}
-                                        onChange={(e) => setRenameDescription(e.target.value)}
-                                        placeholder="Optional description..."
-                                    />
-                                </div>
-                                <div className="flex justify-end gap-3 pt-2">
-                                    <button
-                                        className="px-4 py-2 text-sm rounded bg-bg-panel border border-white/20 text-text-muted hover:bg-bg-panel/80 transition"
-                                        onClick={() => setShowRenameModal(false)}
-                                        disabled={renaming}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        className="px-4 py-2 text-sm rounded bg-brand-primary text-bg-dark hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(200,255,68,0.25)] disabled:opacity-60 disabled:cursor-not-allowed"
-                                        onClick={handleRenameWorkflow}
-                                        disabled={renaming}
-                                    >
-                                        {renaming ? "Saving..." : "Save Changes"}
-                                    </button>
-                                </div>
+            {(showCreateModal || showRenameModal) && (
+                <div style={S.backdrop} onClick={closeModals}>
+                    <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+                        <div style={S.modalTop}>
+                            <span style={S.modalTitle}>
+                                {showCreateModal ? "New workflow" : "Rename workflow"}
+                            </span>
+                            <button style={S.iconBtn} className="m-icon-btn" onClick={closeModals}>
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div style={S.modalFields}>
+                            <div style={S.field}>
+                                <label style={S.fieldLabel}>Name *</label>
+                                <input
+                                    style={S.fieldInput}
+                                    className="m-input"
+                                    value={showCreateModal ? workflowName : renameName}
+                                    onChange={(e) => showCreateModal ? setWorkflowName(e.target.value) : setRenameName(e.target.value)}
+                                    placeholder="e.g. invoice-approval"
+                                    autoFocus
+                                    onKeyDown={(e) => e.key === "Enter" && (showCreateModal ? submitCreateWorkflow() : handleRenameWorkflow())}
+                                />
+                            </div>
+                            <div style={S.field}>
+                                <label style={S.fieldLabel}>Description</label>
+                                <textarea
+                                    style={{ ...S.fieldInput, height: 72, resize: "vertical" }}
+                                    className="m-input"
+                                    value={showCreateModal ? workflowDescription : renameDescription}
+                                    onChange={(e) => showCreateModal ? setWorkflowDescription(e.target.value) : setRenameDescription(e.target.value)}
+                                    placeholder="Optional"
+                                />
                             </div>
                         </div>
-                    </div>
-                )}
-
-                {showCreateModal && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50">
-                        <div className="w-full max-w-md bg-bg-dark rounded-xl shadow-xl p-6 border border-white/10">
-                            <h2 className="text-xl font-bold text-text-primary mb-4">Create New Workflow</h2>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-text-muted mb-1" htmlFor="workflow-name">Name<span className="text-brand-danger ml-1">*</span></label>
-                                    <input
-                                        id="workflow-name"
-                                        type="text"
-                                        className="w-full px-3 py-2 text-sm bg-bg-panel border border-white/20 rounded focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-                                        value={workflowName}
-                                        onChange={(e) => setWorkflowName(e.target.value)}
-                                        placeholder="My Awesome Workflow"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-text-muted mb-1" htmlFor="workflow-desc">Description</label>
-                                    <textarea
-                                        id="workflow-desc"
-                                        rows={3}
-                                        className="w-full px-3 py-2 text-sm bg-bg-panel border border-white/20 rounded focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-                                        value={workflowDescription}
-                                        onChange={(e) => setWorkflowDescription(e.target.value)}
-                                        placeholder="Optional description..."
-                                    />
-                                </div>
-                                <div className="flex justify-end gap-3 pt-2">
-                                    <button
-                                        className="px-4 py-2 text-sm rounded bg-bg-panel border border-white/20 text-text-muted hover:bg-bg-panel/80 transition"
-                                        onClick={() => setShowCreateModal(false)}
-                                        disabled={creating}
-                                    >Cancel</button>
-                                    <button
-                                        className="px-4 py-2 text-sm rounded bg-brand-primary text-bg-dark hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(200,255,68,0.25)] disabled:opacity-60 disabled:cursor-not-allowed"
-                                        onClick={submitCreateWorkflow}
-                                        disabled={creating}
-                                    >
-                                        {creating ? "Creating..." : "Create Workflow"}
-                                    </button>
-                                </div>
-                            </div>
+                        <div style={S.modalActions}>
+                            <button style={S.btnSecondary} className="m-btn-secondary" onClick={closeModals}>Cancel</button>
+                            <button
+                                style={S.btnPrimary}
+                                className="m-btn-primary"
+                                onClick={showCreateModal ? submitCreateWorkflow : handleRenameWorkflow}
+                                disabled={creating || renaming}
+                            >
+                                {creating || renaming ? "Saving..." : showCreateModal ? "Create" : "Save"}
+                            </button>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <h1 className="text-3xl font-black tracking-tight text-text-primary">
-                        Your <span className="text-brand-primary">Workflows</span>
-                    </h1>
-                    <button
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-primary text-bg-dark font-bold text-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(200,255,68,0.25)] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
-                        onClick={handleCreateWorkflow}
-                        disabled={creating}
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="w-4 h-4">
-                            <path d="M12 5v14M5 12h14" />
-                        </svg>
-                        {creating ? "Creating..." : "New Workflow"}
-                    </button>
+            <div style={S.page}>
+
+                {/* Topbar */}
+                <div style={{
+                    ...S.topbar,
+                    opacity: mounted ? 1 : 0,
+                    transform: mounted ? "none" : "translateY(-8px)",
+                    transition: "opacity 0.5s ease, transform 0.5s ease",
+                }}>
+                    <span style={S.logo}>ORG</span>
+                    <div style={S.topbarRight}>
+                        <span style={S.topbarMeta}>
+                            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                        </span>
+                        <button
+                            style={S.btnPrimary}
+                            className="m-btn-primary"
+                            onClick={() => { setWorkflowName(""); setWorkflowDescription(""); setShowCreateModal(true); }}
+                            disabled={creating}
+                        >
+                            + New workflow
+                        </button>
+                    </div>
                 </div>
 
-                {/* Stats Bento Box */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <div className="glass-panel p-5 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center shrink-0 text-brand-primary">
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <div className="text-3xl font-black leading-none">{stats.total}</div>
-                            <div className="text-sm text-text-muted mt-1 font-medium">Total Workflows</div>
-                        </div>
-                    </div>
+                {/* Header */}
+                <div style={{
+                    ...S.header,
+                    opacity: mounted ? 1 : 0,
+                    transform: mounted ? "none" : "translateY(12px)",
+                    transition: "opacity 0.5s ease 0.05s, transform 0.5s ease 0.05s",
+                }}>
+                    <h1 style={S.h1}>Workflows</h1>
+                    <p style={S.subtitle}>Manage and monitor all your automations.</p>
+                </div>
 
-                    <div className="glass-panel p-5 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-brand-secondary/10 border border-brand-secondary/20 flex items-center justify-center shrink-0 text-brand-secondary">
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                            </svg>
+                {/* Stats */}
+                <div style={{
+                    ...S.statsRow,
+                    opacity: mounted ? 1 : 0,
+                    transition: "opacity 0.5s ease 0.1s",
+                }}>
+                    {[
+                        { label: "Total", value: stats.total },
+                        { label: "Active", value: stats.active },
+                        { label: "Inactive", value: stats.inactive },
+                    ].map((s) => (
+                        <div key={s.label} style={S.statBox} className="m-stat">
+                            <div style={S.statVal}>{loading ? "—" : <Counter target={s.value} />}</div>
+                            <div style={S.statLabel}>{s.label}</div>
                         </div>
-                        <div>
-                            <div className="text-3xl font-black leading-none text-brand-secondary">{stats.active}</div>
-                            <div className="text-sm text-text-muted mt-1 font-medium">Active</div>
-                        </div>
-                    </div>
-
-                    <div className="glass-panel p-5 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center shrink-0 text-pink-500">
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <div className="text-3xl font-black leading-none text-pink-500">{stats.inactive}</div>
-                            <div className="text-sm text-text-muted mt-1 font-medium">Inactive</div>
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
                 {/* Toolbar */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
-                    <div className="flex-1 min-w-[240px] flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 transition-all focus-within:border-brand-primary/30 focus-within:bg-white/10 focus-within:ring-2 focus-within:ring-brand-primary/10">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-4 h-4 text-text-muted shrink-0">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="M21 21l-4.35-4.35" />
+                <div style={{
+                    ...S.toolbar,
+                    opacity: mounted ? 1 : 0,
+                    transition: "opacity 0.5s ease 0.15s",
+                }}>
+                    <div style={S.searchBox} className="m-search">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}>
+                            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
                         </svg>
                         <input
-                            type="text"
-                            placeholder="Search workflows..."
+                            style={S.searchInput}
+                            placeholder="Search..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-transparent border-none text-text-primary text-sm w-full outline-none placeholder-text-muted"
                         />
+                        {searchQuery && (
+                            <button style={S.clearBtn} onClick={() => setSearchQuery("")}>×</button>
+                        )}
                     </div>
-
-                    <select
-                        className="px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-text-secondary text-sm cursor-pointer outline-none transition-all hover:bg-white/10 focus:border-brand-primary/30 focus:ring-2 focus:ring-brand-primary/10 appearance-none min-w-[140px]"
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                    >
-                        <option value="all" className="bg-bg-elevated text-text-primary">All Status</option>
-                        <option value="active" className="bg-bg-elevated text-text-primary">Active</option>
-                        <option value="inactive" className="bg-bg-elevated text-text-primary">Inactive</option>
-                    </select>
-
-                    <select
-                        className="px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-text-secondary text-sm cursor-pointer outline-none transition-all hover:bg-white/10 focus:border-brand-primary/30 focus:ring-2 focus:ring-brand-primary/10 appearance-none min-w-[140px]"
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                    >
-                        <option value="newest" className="bg-bg-elevated text-text-primary">Newest First</option>
-                        <option value="oldest" className="bg-bg-elevated text-text-primary">Oldest First</option>
+                    <div style={S.filters}>
+                        {["all", "active", "inactive"].map((f) => (
+                            <button
+                                key={f}
+                                style={{ ...S.filterBtn, ...(filterStatus === f ? S.filterBtnActive : {}) }}
+                                className={filterStatus === f ? "" : "m-filter-btn"}
+                                onClick={() => setFilterStatus(f)}
+                            >
+                                {f.charAt(0).toUpperCase() + f.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                    <select style={S.sortSelect} className="m-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                        <option value="newest">Newest</option>
+                        <option value="oldest">Oldest</option>
                     </select>
                 </div>
 
-                {/* Error */}
                 {error && (
-                    <div className="flex items-center gap-2.5 p-4 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-500 text-sm mb-6 animate-in slide-in-from-top-2">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-4 h-4 shrink-0">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M12 8v4M12 16h.01" />
-                        </svg>
-                        {error}
-                    </div>
+                    <div style={S.errorBar}><span style={{ fontWeight: 600 }}>Error:</span> {error}</div>
                 )}
 
-                {/* Loading */}
                 {loading && (
-                    <div className="flex flex-col items-center justify-center py-20 gap-4">
-                        <div className="w-8 h-8 rounded-full border-2 border-brand-primary/20 border-t-brand-primary animate-spin" />
-                        <span className="text-sm text-text-muted">Loading workflows...</span>
-                    </div>
+                    <div style={S.center}><div className="m-spinner" /></div>
                 )}
 
-                {/* Empty State */}
                 {!loading && filteredWorkflows.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-24 text-center glass-panel">
-                        <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center mb-5 text-brand-primary">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="w-8 h-8">
-                                <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" />
-                                <path d="M13 2v7h7" />
-                            </svg>
+                    <div style={S.empty}>
+                        <div style={S.emptyTitle}>
+                            {searchQuery || filterStatus !== "all" ? "No results" : "No workflows yet"}
                         </div>
-                        <div className="text-lg font-bold text-text-primary mb-2">
-                            {searchQuery || filterStatus !== "all" ? "No matching workflows" : "No workflows yet"}
-                        </div>
-                        <div className="text-sm text-text-muted max-w-sm leading-relaxed mb-6">
+                        <div style={S.emptyBody}>
                             {searchQuery || filterStatus !== "all"
-                                ? "Try adjusting your search or filters to find what you're looking for."
-                                : "Create your first workflow to start automating tasks and connecting services."}
+                                ? "Try a different search or filter."
+                                : "Create your first workflow to get started."}
                         </div>
                         {!searchQuery && filterStatus === "all" && (
                             <button
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-primary text-bg-dark font-bold text-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(200,255,68,0.25)]"
-                                onClick={handleCreateWorkflow}
-                                disabled={creating}
+                                style={S.btnPrimary}
+                                className="m-btn-primary"
+                                onClick={() => { setWorkflowName(""); setWorkflowDescription(""); setShowCreateModal(true); }}
                             >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="w-4 h-4">
-                                    <path d="M12 5v14M5 12h14" />
-                                </svg>
-                                {creating ? "Creating..." : "Create Workflow"}
+                                Create workflow
                             </button>
                         )}
                     </div>
                 )}
 
-                {/* Grid */}
                 {!loading && filteredWorkflows.length > 0 && (
-                    <>
-                        <div className="text-xs text-text-muted mb-4 font-mono font-medium">
-                            Showing {filteredWorkflows.length} of {workflows.length} workflow{workflows.length !== 1 ? 's' : ''}
+                    <div style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.5s ease 0.2s" }}>
+                        <div style={S.tableHead}>
+                            <span style={{ ...S.tableHeadCell, flex: 3 }}>Name</span>
+                            <span style={{ ...S.tableHeadCell, flex: 2 }}>Description</span>
+                            <span style={{ ...S.tableHeadCell, flex: 1 }}>Status</span>
+                            <span style={{ ...S.tableHeadCell, flex: 1.5 }}>Created</span>
+                            <span style={{ ...S.tableHeadCell, flex: 1.5 }}>Updated</span>
+                            <span style={{ ...S.tableHeadCell, flex: 0.5 }}></span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {filteredWorkflows.map((workflow) => {
-                                const workflowId = workflow.ID || workflow.id;
-                                const name = workflow.Name || workflow.name || "Untitled";
-                                const desc = workflow.Description?.String || workflow.description || "Add description...";
-                                const isActive = workflow.IsActive || workflow.is_active;
-                                const createdAt = workflow.CreatedAt || workflow.created_at;
-                                const updatedAt = workflow.UpdatedAt || workflow.updated_at;
 
-                                return (
-                                    <div
-                                        key={workflowId}
-                                        className="glass-panel glass-panel-hover p-5 cursor-pointer flex flex-col relative overflow-hidden group"
-                                        onClick={() => navigate(`/workflows/${workflowId}/canvas`)}
-                                    >
-                                        {/* Top gradient border accent */}
-                                        <div className={`absolute top-0 left-0 right-0 h-[2px] opacity-40 bg-gradient-to-r from-transparent via-${isActive ? 'brand-primary' : 'pink-500'} to-transparent`} />
+                        {filteredWorkflows.map((workflow, idx) => {
+                            const wfId = workflow.ID || workflow.id;
+                            const name = workflow.Name || workflow.name || "Untitled";
+                            const desc = workflow.Description?.String || workflow.description || "—";
+                            const isActive = workflow.IsActive || workflow.is_active;
+                            const createdAt = workflow.CreatedAt || workflow.created_at;
+                            const updatedAt = workflow.UpdatedAt || workflow.updated_at;
 
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="text-base font-bold text-text-primary tracking-tight leading-tight line-clamp-1 pr-2">
-                                                {name}
-                                            </div>
-                                            {/* Action menu */}
-                                            <div className="relative">
-                                                <button
-                                                    className="p-1 rounded hover:bg-white/10 transition"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setMenuOpenId(menuOpenId === workflowId ? null : workflowId);
-                                                    }}
-                                                >
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-5 h-5 text-text-muted">
-                                                        <circle cx="12" cy="5" r="1" />
-                                                        <circle cx="12" cy="12" r="1" />
-                                                        <circle cx="12" cy="19" r="1" />
-                                                    </svg>
-                                                </button>
-                                                {menuOpenId === workflowId && (
-                                                    <div className="absolute right-0 mt-2 w-40 bg-bg-dark rounded-xl shadow-xl border border-white/10 z-10">
-                                                        <ul className="py-2">
-                                                            <li
-                                                                className="px-4 py-2 text-sm text-text-primary hover:bg-white/5 cursor-pointer"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setSelectedWorkflow(workflow);
-                                                                    setRenameName(name);
-                                                                    setRenameDescription(desc);
-                                                                    setShowRenameModal(true);
-                                                                    setMenuOpenId(null);
-                                                                }}
-                                                            >
-                                                                Rename Workflow
-                                                            </li>
-                                                            <li
-                                                                className="px-4 py-2 text-sm text-text-primary hover:bg-white/5 cursor-pointer"
-                                                                onClick={async (e) => {
-                                                                    e.stopPropagation();
-                                                                    const confirmed = window.confirm(
-                                                                        `Are you sure you want to delete "${name}"?`
-                                                                    );
+                            return (
+                                <div
+                                    key={wfId}
+                                    style={{ ...S.tableRow, animationDelay: `${idx * 40}ms` }}
+                                    className="m-row"
+                                    onClick={() => navigate(`/workflows/${wfId}/canvas`)}
+                                >
+                                    <span style={{ ...S.tableCell, flex: 3 }}>
+                                        <span style={S.rowName}>{name}</span>
+                                    </span>
+                                    <span style={{ ...S.tableCell, flex: 2 }}>
+                                        <span style={S.rowDesc}>{desc}</span>
+                                    </span>
+                                    <span style={{ ...S.tableCell, flex: 1 }}>
+                                        <span style={{
+                                            display: "inline-flex", alignItems: "center", gap: 5,
+                                            fontSize: 11, fontWeight: 500,
+                                            color: isActive ? "#111" : "#bbb",
+                                        }}>
+                                            <span style={{
+                                                width: 5, height: 5, borderRadius: "50%",
+                                                background: isActive ? "#111" : "#ddd",
+                                                display: "inline-block", flexShrink: 0,
+                                            }} />
+                                            {isActive ? "Active" : "Inactive"}
+                                        </span>
+                                    </span>
+                                    <span style={{ ...S.tableCell, flex: 1.5, color: "#aaa", fontSize: 12 }}>
+                                        {formatDate(createdAt)}
+                                    </span>
+                                    <span style={{ ...S.tableCell, flex: 1.5, color: "#aaa", fontSize: 12 }}>
+                                        {formatTimeAgo(updatedAt)}
+                                    </span>
+                                    <span style={{ ...S.tableCell, flex: 0.5, justifyContent: "flex-end", overflow: "visible" }}>
+                                        <RowMenu
+                                            workflow={workflow}
+                                            onRename={openRename}
+                                            onDelete={handleDelete}
+                                        />
+                                    </span>
+                                </div>
+                            );
+                        })}
 
-                                                                    if (!confirmed) return;
-
-                                                                    try {
-                                                                        await api.deleteWorkflow(workflowId);
-
-                                                                        setWorkflows((prev) =>
-                                                                            prev.filter(
-                                                                                (wf) =>
-                                                                                    (wf.id || wf.ID) !== workflowId
-                                                                            )
-                                                                        );
-
-                                                                        setMenuOpenId(null);
-                                                                    } catch (err) {
-                                                                        setError(err.message || "Failed to delete workflow");
-                                                                    }
-                                                                    setMenuOpenId(null);
-                                                                }}
-                                                            >
-                                                                Delete Workflow
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="text-[13px] text-text-secondary leading-relaxed mb-4 line-clamp-2 flex-1">
-                                            {desc}
-                                        </div>
-
-                                        <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-auto">
-                                            <div className="flex items-center gap-3">
-                                                <span className="flex items-center gap-1.5 text-xs text-text-muted font-mono">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5">
-                                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                                        <path d="M16 2v4M8 2v4M3 10h18" />
-                                                    </svg>
-                                                    {formatDate(createdAt)}
-                                                </span>
-                                                <span className="flex items-center gap-1.5 text-xs text-text-muted font-mono">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5">
-                                                        <circle cx="12" cy="12" r="10" />
-                                                        <polyline points="12 6 12 12 16 14" />
-                                                    </svg>
-                                                    {formatTimeAgo(updatedAt)}
-                                                </span>
-                                            </div>
-                                            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/5 opacity-0 -translate-x-2 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5 text-text-secondary">
-                                                    <path d="M5 12h14M12 5l7 7-7 7" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                        <div style={S.tableFooter}>
+                            {filteredWorkflows.length} of {workflows.length} workflow{workflows.length !== 1 ? "s" : ""}
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
         </div>
@@ -543,3 +511,223 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+const S = {
+    root: {
+        minHeight: "100vh",
+        background: "#fafafa",
+        color: "#111",
+        fontFamily: "'Geist', 'Inter', 'Helvetica Neue', sans-serif",
+    },
+    page: { maxWidth: 1100, margin: "0 auto", padding: "0 40px 80px" },
+    topbar: {
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "28px 0 20px", marginBottom: 56, borderBottom: "1px solid #e5e5e5",
+    },
+    logo: {
+        fontFamily: "'Geist Mono', 'DM Mono', monospace",
+        fontSize: 15, fontWeight: 700, letterSpacing: "0.08em", color: "#111",
+    },
+    topbarRight: { display: "flex", alignItems: "center", gap: 20 },
+    topbarMeta: { fontSize: 12, color: "#999" },
+    header: { marginBottom: 40 },
+    h1: {
+        fontSize: "clamp(1.8rem, 3vw, 2.4rem)", fontWeight: 700,
+        letterSpacing: "-0.04em", color: "#111", margin: "0 0 8px", lineHeight: 1.1,
+    },
+    subtitle: { fontSize: 14, color: "#888", margin: 0, fontWeight: 400 },
+    statsRow: {
+        display: "flex", marginBottom: 32,
+        borderTop: "1px solid #e5e5e5", borderBottom: "1px solid #e5e5e5",
+    },
+    statBox: {
+        flex: 1, padding: "24px 0 24px 24px",
+        borderRight: "1px solid #e5e5e5",
+        display: "flex", flexDirection: "column", gap: 4,
+        transition: "background 0.15s", cursor: "default",
+    },
+    statVal: {
+        fontSize: "clamp(1.6rem, 3vw, 2rem)", fontWeight: 700,
+        letterSpacing: "-0.04em", color: "#111", lineHeight: 1,
+    },
+    statLabel: {
+        fontSize: 11, color: "#aaa", fontWeight: 600,
+        textTransform: "uppercase", letterSpacing: "0.07em",
+    },
+    toolbar: {
+        display: "flex", alignItems: "center", gap: 10,
+        marginBottom: 4, flexWrap: "wrap", paddingTop: 16,
+    },
+    searchBox: {
+        display: "flex", alignItems: "center", gap: 8,
+        border: "1px solid #e5e5e5", borderRadius: 6,
+        padding: "0 12px", height: 34, background: "#fff",
+        flex: 1, minWidth: 200, maxWidth: 260, transition: "border-color 0.15s",
+    },
+    searchInput: {
+        background: "transparent", border: "none", outline: "none",
+        fontSize: 13, color: "#111", width: "100%", fontFamily: "inherit",
+    },
+    clearBtn: {
+        background: "none", border: "none", color: "#bbb",
+        cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0,
+    },
+    filters: {
+        display: "flex", gap: 2,
+        background: "#f0f0f0", borderRadius: 6, padding: 3,
+    },
+    filterBtn: {
+        padding: "4px 12px", borderRadius: 4, border: "none",
+        background: "transparent", color: "#888", fontSize: 12,
+        fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "color 0.15s",
+    },
+    filterBtnActive: {
+        background: "#fff", color: "#111", boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+    },
+    sortSelect: {
+        border: "1px solid #e5e5e5", borderRadius: 6, padding: "0 12px",
+        height: 34, fontSize: 12, color: "#555", background: "#fff",
+        outline: "none", cursor: "pointer", fontFamily: "inherit",
+        appearance: "none", minWidth: 100,
+    },
+    errorBar: {
+        padding: "10px 14px", border: "1px solid #111",
+        borderRadius: 6, fontSize: 13, color: "#111", marginBottom: 20,
+    },
+    center: { display: "flex", justifyContent: "center", padding: "80px 0" },
+    empty: {
+        padding: "80px 0", display: "flex", flexDirection: "column",
+        alignItems: "center", gap: 10, borderTop: "1px solid #e5e5e5",
+    },
+    emptyTitle: { fontSize: 16, fontWeight: 600, color: "#111", letterSpacing: "-0.02em" },
+    emptyBody: { fontSize: 13, color: "#999", marginBottom: 8 },
+    tableHead: {
+        display: "flex", alignItems: "center",
+        borderTop: "1px solid #e5e5e5", borderBottom: "1px solid #e5e5e5",
+        padding: "10px 0", marginTop: 16,
+    },
+    tableHeadCell: {
+        fontSize: 11, fontWeight: 600, color: "#aaa",
+        textTransform: "uppercase", letterSpacing: "0.07em", padding: "0 12px",
+    },
+    tableRow: {
+        display: "flex", alignItems: "center",
+        borderBottom: "1px solid #f0f0f0",
+        padding: "15px 0", cursor: "pointer", transition: "background 0.12s",
+    },
+    tableCell: {
+        display: "flex", alignItems: "center",
+        padding: "0 12px", fontSize: 13, color: "#555", overflow: "hidden",
+    },
+    rowName: {
+        fontWeight: 600, color: "#111", letterSpacing: "-0.01em",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+    },
+    rowDesc: {
+        color: "#bbb", overflow: "hidden", textOverflow: "ellipsis",
+        whiteSpace: "nowrap", fontSize: 12,
+    },
+    tableFooter: {
+        fontSize: 11, color: "#ccc", padding: "14px 12px 0",
+        letterSpacing: "0.02em",
+    },
+    btnPrimary: {
+        padding: "8px 16px", background: "#111", color: "#fafafa",
+        border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600,
+        cursor: "pointer", fontFamily: "inherit", letterSpacing: "-0.01em",
+        transition: "opacity 0.15s", whiteSpace: "nowrap",
+    },
+    btnSecondary: {
+        padding: "8px 16px", background: "transparent", color: "#888",
+        border: "1px solid #e5e5e5", borderRadius: 6, fontSize: 13,
+        fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "border-color 0.15s",
+    },
+    iconBtn: {
+        background: "none", border: "none", color: "#ccc", cursor: "pointer",
+        padding: "5px 6px", borderRadius: 5, display: "flex",
+        alignItems: "center", justifyContent: "center",
+        transition: "background 0.12s, color 0.12s",
+    },
+    iconBtnActive: {
+        background: "#f0f0f0",
+        color: "#555",
+    },
+    menu: {
+        position: "absolute", top: "calc(100% + 6px)", right: 0,
+        background: "#fff", border: "1px solid #e5e5e5", borderRadius: 8,
+        padding: "4px", zIndex: 9999, minWidth: 140,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)",
+    },
+    menuItem: {
+        display: "flex", alignItems: "center",
+        width: "100%", background: "none", border: "none",
+        color: "#444", fontSize: 13, fontFamily: "inherit",
+        padding: "8px 10px", borderRadius: 5, cursor: "pointer",
+        textAlign: "left", transition: "background 0.1s",
+    },
+    menuItemDanger: {
+        color: "#dc2626",
+    },
+    menuDivider: {
+        height: 1, background: "#f0f0f0", margin: "3px 6px",
+    },
+    backdrop: {
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.2)",
+        backdropFilter: "blur(4px)", display: "flex", alignItems: "center",
+        justifyContent: "center", zIndex: 100, padding: 20,
+    },
+    modal: {
+        background: "#fff", border: "1px solid #e5e5e5", borderRadius: 12,
+        width: "100%", maxWidth: 400, boxShadow: "0 24px 48px rgba(0,0,0,0.08)",
+        animation: "modalIn 0.2s ease", overflow: "hidden",
+    },
+    modalTop: {
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "20px 20px 0",
+    },
+    modalTitle: { fontSize: 15, fontWeight: 700, color: "#111", letterSpacing: "-0.02em" },
+    modalFields: { padding: "20px 20px 0" },
+    field: { marginBottom: 16 },
+    fieldLabel: {
+        display: "block", fontSize: 11, fontWeight: 600, color: "#aaa",
+        letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6,
+    },
+    fieldInput: {
+        width: "100%", border: "1px solid #e5e5e5", borderRadius: 6,
+        padding: "9px 12px", fontSize: 13, fontFamily: "inherit", color: "#111",
+        background: "#fafafa", outline: "none", boxSizing: "border-box", transition: "border-color 0.15s",
+    },
+    modalActions: {
+        display: "flex", justifyContent: "flex-end",
+        gap: 8, padding: "16px 20px 20px",
+    },
+};
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;600&display=swap');
+  * { box-sizing: border-box; }
+  .m-btn-primary:hover { opacity: 0.75; }
+  .m-btn-secondary:hover { border-color: #bbb !important; color: #444 !important; }
+  .m-row:hover { background: #f7f7f7 !important; }
+  .m-icon-btn:hover { background: #f0f0f0 !important; color: #555 !important; }
+  .m-stat:hover { background: #f7f7f7 !important; }
+  .m-input:focus { border-color: #111 !important; background: #fff !important; }
+  .m-search:focus-within { border-color: #bbb !important; }
+  .m-filter-btn:hover { color: #444 !important; }
+  .m-select:hover { border-color: #bbb !important; }
+  .m-menu-item:hover { background: #f5f5f5 !important; }
+  .m-menu-item-danger:hover { background: #fff1f1 !important; }
+  .m-spinner {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.5px solid #e5e5e5; border-top-color: #111;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (max-width: 700px) {
+    .m-table-desc, .m-table-date { display: none; }
+  }
+`;

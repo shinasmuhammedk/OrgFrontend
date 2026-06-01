@@ -1,18 +1,18 @@
 // src/features/workflow/components/NodeConfigPanel.jsx
-import { X, Globe, Webhook, GitBranch, Clock3, Trash2 } from "lucide-react";
+import { X, Globe, Webhook, GitBranch, Clock3, Trash2, Bot } from "lucide-react";
 
 const ConfigField = ({ label, children }) => (
     <div style={{ marginBottom: 18 }}>
         <label
             style={{
                 display: "block",
-                fontSize: 10,
-                fontWeight: 700,
-                color: "#6b6b8a",
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#aaa",
                 textTransform: "uppercase",
                 letterSpacing: "0.06em",
-                marginBottom: 8,
-                fontFamily: "'Inter', sans-serif",
+                marginBottom: 6,
+                fontFamily: "'Geist Mono', monospace",
             }}
         >
             {label}
@@ -23,15 +23,16 @@ const ConfigField = ({ label, children }) => (
 
 const fieldBase = {
     width: "100%",
-    padding: "10px 13px",
-    background: "#0a0a0f",
-    border: "1px solid rgba(255,255,255,0.08)",
-    color: "#f0f0f5",
-    borderRadius: 8,
+    padding: "9px 12px",
+    background: "#fafafa",
+    border: "1px solid #e5e5e5",
+    color: "#111",
+    borderRadius: 6,
     fontSize: 13,
     outline: "none",
-    transition: "all 0.2s ease",
-    fontFamily: "'Inter', sans-serif",
+    transition: "border-color 0.15s ease, background 0.15s ease",
+    fontFamily: "'Geist', 'Inter', sans-serif",
+    boxSizing: "border-box",
 };
 
 function NodeConfigPanel({
@@ -45,14 +46,15 @@ function NodeConfigPanel({
     if (!selectedNode) return null;
 
     const typeConfig = {
-        httpRequest: { icon: <Globe size={15} color="#c8ff44" />, label: "HTTP Request" },
-        webhookTrigger: { icon: <Webhook size={15} color="#c8ff44" />, label: "Webhook Trigger" },
-        conditionNode: { icon: <GitBranch size={15} color="#c8ff44" />, label: "Condition" },
-        delayNode: { icon: <Clock3 size={15} color="#c8ff44" />, label: "Delay" },
-        emailNode: { icon: <Globe size={15} color="#c8ff44" />, label: "Email" },
+        httpRequest: { icon: <Globe size={15} color="#111" />, label: "HTTP Request" },
+        webhookTrigger: { icon: <Webhook size={15} color="#111" />, label: "Webhook Trigger" },
+        conditionNode: { icon: <GitBranch size={15} color="#111" />, label: "Condition" },
+        delayNode: { icon: <Clock3 size={15} color="#111" />, label: "Delay" },
+        emailNode: { icon: <Globe size={15} color="#111" />, label: "Email" },
+        aiNode: { icon: <Bot size={15} color="#111" />, label: "AI" },
     };
 
-    const currentType = typeConfig[selectedNode.type] || { icon: <Globe size={15} color="#c8ff44" />, label: selectedNode.type };
+    const currentType = typeConfig[selectedNode.type] || { icon: <Globe size={15} color="#111" />, label: selectedNode.type };
 
     return (
         <>
@@ -65,24 +67,41 @@ function NodeConfigPanel({
                     animation: slideRight 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
                 }
                 .config-field:focus {
-                    border-color: rgba(200,255,68,0.4) !important;
-                    box-shadow: 0 0 0 3px rgba(200,255,68,0.08) !important;
-                    background: rgba(255,255,255,0.03) !important;
+                    border-color: #111 !important;
+                    background: #fff !important;
                 }
                 .config-select {
                     appearance: none;
-                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
                     background-repeat: no-repeat;
                     background-position: right 12px center;
                     padding-right: 32px !important;
                 }
                 .config-select option {
-                    background: #0a0a0f;
-                    color: #f0f0f5;
+                    background: #fff;
+                    color: #111;
+                }
+                .delete-btn {
+                    width: 100%;
+                    background: transparent;
+                    color: #ef4444;
+                    border: 1px solid #e5e5e5;
+                    padding: 10px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    font-size: 13px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    transition: all 0.15s;
+                    font-family: 'Geist', 'Inter', sans-serif;
+                    margin-top: 8px;
                 }
                 .delete-btn:hover {
-                    background: rgba(255,71,117,0.12) !important;
-                    color: #ff4775 !important;
+                    border-color: #ef4444 !important;
+                    background: #fef2f2 !important;
                 }
             `}</style>
 
@@ -94,18 +113,16 @@ function NodeConfigPanel({
                     top: 0,
                     height: "100vh",
                     width: configWidth || 380,
-                    background: "rgba(12,12,20,0.98)",
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    borderLeft: "1px solid rgba(255,255,255,0.06)",
+                    background: "#fff",
+                    borderLeft: "1px solid #e5e5e5",
                     padding: "24px 22px",
                     overflowY: "auto",
                     zIndex: 50,
-                    boxShadow: "-12px 0 40px rgba(0,0,0,0.5)",
+                    boxShadow: "-4px 0 24px rgba(0,0,0,0.06)",
                     display: "flex",
                     flexDirection: "column",
                     gap: 16,
-                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+                    fontFamily: "'Geist', 'Inter', sans-serif",
                 }}
             >
                 {/* Panel Header */}
@@ -126,21 +143,13 @@ function NodeConfigPanel({
                                 marginBottom: 4,
                             }}
                         >
-                            <div
-                                style={{
-                                    width: 3,
-                                    height: 18,
-                                    background: "#c8ff44",
-                                    borderRadius: 2,
-                                }}
-                            />
                             <h2
                                 style={{
-                                    color: "#f0f0f5",
-                                    fontSize: 17,
-                                    fontWeight: 800,
+                                    color: "#111",
+                                    fontSize: 18,
+                                    fontWeight: 700,
                                     margin: 0,
-                                    letterSpacing: "-0.01em",
+                                    letterSpacing: "-0.02em",
                                 }}
                             >
                                 Node Config
@@ -148,10 +157,9 @@ function NodeConfigPanel({
                         </div>
                         <div
                             style={{
-                                fontSize: 10,
-                                color: "#4a4a6a",
-                                fontFamily: "'JetBrains Mono', monospace",
-                                paddingLeft: 11,
+                                fontSize: 11,
+                                color: "#888",
+                                fontFamily: "'Geist Mono', monospace",
                             }}
                         >
                             {selectedNode.id}
@@ -160,36 +168,38 @@ function NodeConfigPanel({
                     <button
                         onClick={() => setSelectedNode(null)}
                         style={{
-                            background: "rgba(255,71,117,0.06)",
-                            border: "1px solid rgba(255,71,117,0.12)",
-                            color: "#ff4775",
+                            background: "transparent",
+                            border: "none",
+                            color: "#888",
                             cursor: "pointer",
                             width: 32,
                             height: 32,
-                            borderRadius: 8,
+                            borderRadius: 6,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            transition: "all 0.2s",
+                            transition: "all 0.15s",
                             padding: 0,
                         }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "rgba(255,71,117,0.12)";
+                            e.currentTarget.style.background = "#f5f5f5";
+                            e.currentTarget.style.color = "#111";
                         }}
                         onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "rgba(255,71,117,0.06)";
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.color = "#888";
                         }}
                     >
-                        <X size={14} />
+                        <X size={16} />
                     </button>
                 </div>
 
                 {/* Type Badge */}
                 <div
                     style={{
-                        background: "rgba(200,255,68,0.06)",
-                        border: "1px solid rgba(200,255,68,0.12)",
-                        borderRadius: 10,
+                        background: "#fafafa",
+                        border: "1px solid #e5e5e5",
+                        borderRadius: 8,
                         padding: "10px 14px",
                         display: "flex",
                         alignItems: "center",
@@ -200,8 +210,8 @@ function NodeConfigPanel({
                     <span
                         style={{
                             fontSize: 13,
-                            fontWeight: 700,
-                            color: "#c8ff44",
+                            fontWeight: 600,
+                            color: "#111",
                         }}
                     >
                         {currentType.label}
@@ -246,7 +256,7 @@ function NodeConfigPanel({
                                     ...fieldBase,
                                     height: 140,
                                     resize: "vertical",
-                                    fontFamily: "'JetBrains Mono', monospace",
+                                    fontFamily: "'Geist Mono', monospace",
                                     lineHeight: 1.6,
                                     fontSize: 12,
                                 }}
@@ -434,28 +444,48 @@ function NodeConfigPanel({
                     </>
                 )}
 
+                {/* AI Config */}
+                {selectedNode.type === "aiNode" && (
+                    <>
+                        <ConfigField label="Prompt">
+                            <textarea
+                                value={selectedNode.data.config.prompt || ""}
+                                onChange={(e) =>
+                                    updateNodeConfig("prompt", e.target.value)
+                                }
+                                placeholder="Summarize this message: {{trigger.message}}"
+                                className="config-field"
+                                style={{
+                                    ...fieldBase,
+                                    height: 180,
+                                    resize: "vertical",
+                                    lineHeight: 1.6,
+                                    fontFamily: "'Geist Mono', monospace",
+                                }}
+                            />
+                        </ConfigField>
+
+                        <ConfigField label="Model">
+                            <input
+                                value={
+                                    selectedNode.data.config.model ||
+                                    "gemini-2.5-flash"
+                                }
+                                onChange={(e) =>
+                                    updateNodeConfig("model", e.target.value)
+                                }
+                                placeholder="gemini-2.5-flash"
+                                className="config-field"
+                                style={{ ...fieldBase }}
+                            />
+                        </ConfigField>
+                    </>
+                )}
+
                 {/* Delete */}
                 <button
                     onClick={deleteSelectedNode}
                     className="delete-btn"
-                    style={{
-                        width: "100%",
-                        background: "rgba(255,71,117,0.06)",
-                        color: "#ff4775",
-                        border: "1px solid rgba(255,71,117,0.12)",
-                        padding: "12px",
-                        borderRadius: 10,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        fontSize: 13,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        transition: "all 0.2s",
-                        fontFamily: "'Inter', sans-serif",
-                        marginTop: 8,
-                    }}
                 >
                     <Trash2 size={14} />
                     Delete Node
@@ -464,22 +494,22 @@ function NodeConfigPanel({
                 {/* Config Preview */}
                 <div
                     style={{
-                        background: "rgba(255,255,255,0.02)",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        borderRadius: 10,
+                        background: "#fafafa",
+                        border: "1px solid #e5e5e5",
+                        borderRadius: 8,
                         padding: "14px",
                         marginTop: 4,
                     }}
                 >
                     <div
                         style={{
-                            fontSize: 10,
-                            color: "#4a4a6a",
-                            fontWeight: 700,
+                            fontSize: 11,
+                            color: "#aaa",
+                            fontWeight: 600,
                             textTransform: "uppercase",
                             letterSpacing: "0.06em",
                             marginBottom: 10,
-                            fontFamily: "'JetBrains Mono', monospace",
+                            fontFamily: "'Geist Mono', monospace",
                         }}
                     >
                         Live Config Preview
@@ -488,8 +518,8 @@ function NodeConfigPanel({
                         style={{
                             whiteSpace: "pre-wrap",
                             fontSize: 11,
-                            color: "#6b6b8a",
-                            fontFamily: "'JetBrains Mono', monospace",
+                            color: "#555",
+                            fontFamily: "'Geist Mono', monospace",
                             lineHeight: 1.7,
                             margin: 0,
                         }}

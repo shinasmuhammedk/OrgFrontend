@@ -8,10 +8,8 @@ export function useWorkflowRuns(workflowId, setError) {
     const fetchRuns = async () => {
         try {
             setLoadingRuns(true);
-
             const res = await api.getWorkflowRuns(workflowId);
             setRuns(res.data || []);
-
             return res.data || [];
         } catch (err) {
             setError(err.message);
@@ -22,8 +20,7 @@ export function useWorkflowRuns(workflowId, setError) {
     };
 
     const formatDate = (dateStr) => {
-        if (!dateStr || dateStr === "N/A") return "N/A";
-
+        if (!dateStr || dateStr === "N") return "N/A";
         try {
             return new Date(dateStr).toLocaleString("en-US", {
                 month: "short",

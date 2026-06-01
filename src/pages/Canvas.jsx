@@ -21,7 +21,7 @@ import API_BASE_URL from "../config/api";
 import { useWorkflowExecution } from "../features/workflow/hooks/useWorkflowExecution";
 import { useWorkflowRuns } from "../features/workflow/hooks/useWorkflowRuns";
 import { useToast } from "../features/workflow/hooks/useToast";
-
+import { S, CSS } from "../styles/shared";
 function Canvas() {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -88,18 +88,18 @@ function Canvas() {
         const eventSource = new EventSource(`${API_BASE_URL}/workflows/${id}/events?token=${token}`);
         eventSource.addEventListener("workflow_update", (event) => {
             const data = JSON.parse(event.data);
-            
+
             setLiveLogs((logs) => {
                 const logId = `${data.step_id}-${data.status}`;
                 if (logs.find((l) => l.id === logId)) return logs;
-                
+
                 let displayStatus = data.status;
                 if (data.status === "running") displayStatus = "started";
                 if (data.status === "success") displayStatus = "completed successfully";
-                
+
                 // Get the node type from current nodes if possible
                 let stepType = data.step_type || "Step";
-                
+
                 return [
                     ...logs,
                     {
@@ -115,13 +115,13 @@ function Canvas() {
                 currentNodes.map((node) =>
                     String(node.data.dbStepId) === String(data.step_id)
                         ? {
-                              ...node,
-                              data: {
-                                  ...node.data,
-                                  status: data.status,
-                                  error: data.error || null,
-                              },
-                          }
+                            ...node,
+                            data: {
+                                ...node.data,
+                                status: data.status,
+                                error: data.error || null,
+                            },
+                        }
                         : node
                 )
             );
@@ -168,10 +168,10 @@ function Canvas() {
     }, [edges, nodes]);
 
     return (
-        <div className="w-screen h-screen overflow-hidden bg-bg-dark text-text-primary relative font-sans mesh-bg">
-            
+        <div style={S.root} className="w-screen h-screen overflow-hidden bg-bg-dark text-text-primary relative font-sans mesh-bg">
+            <style>{CSS}</style>
             {/* Top Workflow Toolbar */}
-            <WorkflowHeader 
+            <WorkflowHeader
                 workflowName={`Workflow ${id?.slice(0, 6) || ""}`}
                 handleSaveWorkflow={handleSaveWorkflow}
                 saving={saving}
@@ -196,7 +196,7 @@ function Canvas() {
             <NodeLibrary onDragStart={onDragStart} />
 
             {/* Main Canvas Area */}
-            <div 
+            <div
                 className="w-full h-full"
                 style={{ paddingRight: selectedNode ? `${CONFIG_W}px` : "0px", transition: "padding-right 0.35s cubic-bezier(0.4,0,0.2,1)" }}
             >
@@ -218,10 +218,16 @@ function Canvas() {
                     nodeTypes={nodeTypes}
                     fitView
                     fitViewOptions={{ padding: 1 }}
+                    onConnect={onConnect}
+                    connectionLineStyle={{
+                        stroke: "#00d97e",
+                        strokeWidth: 3,
+                    }}
+                    connectionLineType="smoothstep"
                 >
                     <Background color="rgba(255,255,255,0.05)" gap={24} size={2} className="dotted-bg" />
                     <Controls className="glass-panel border-none shadow-[0_10px_30px_rgba(0,0,0,0.5)] fill-text-primary mb-24" />
-                    
+
                     {/* Modern MiniMap */}
                     <MiniMap
                         className="glass-panel overflow-hidden border-white/10 mb-24"

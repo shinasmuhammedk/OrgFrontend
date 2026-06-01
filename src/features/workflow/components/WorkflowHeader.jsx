@@ -1,8 +1,9 @@
-import { Save, Play, Loader2, ArrowLeft, Share2, Rocket } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Save, Play, Loader2, ArrowLeft, Share2, Rocket, History } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function WorkflowHeader({ workflowName = "Untitled Workflow", handleSaveWorkflow, saving, handleRunWorkflow, running }) {
     const navigate = useNavigate();
+    const { id } = useParams();
 
     return (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between glass-panel px-4 py-2 w-[calc(100%-2rem)] max-w-5xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
@@ -44,6 +45,14 @@ export default function WorkflowHeader({ workflowName = "Untitled Workflow", han
                 >
                     <Share2 size={14} />
                     Share
+                </button>
+
+                <button
+                    onClick={() => navigate(`/workflows/${id}/runs`)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all"
+                >
+                    <History size={14} />
+                    History
                 </button>
 
                 <button

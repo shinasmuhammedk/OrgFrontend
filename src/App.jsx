@@ -6,43 +6,50 @@ import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Canvas from "./pages/Canvas";
 import RunHistory from "./pages/RunHistory";
+import WorkflowRuns from "./pages/WorkflowRuns";
 import Hero from "./pages/Hero";
 import Billing from "./pages/Billing";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import Services from "./pages/Services";
+import Integrations from "./pages/Integrations";
+import GraphQL from "./pages/GraphQL";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import OAuthCallback from "./pages/OAuthCallback";
 
 function App() {
-    return (
-        <BrowserRouter>
-            <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/oauth/callback" element={<OAuthCallback />} />
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
 
-                {/* Full-screen routes without Navbar */}
-                <Route path="/workflows/:id/canvas" element={<Canvas />} />
-                <Route path="/workflow-runs/:id" element={<RunHistory />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
+        {/* Full-screen routes without Navbar */}
+        <Route path="/workflows/:id/canvas" element={<Canvas />} />
+        <Route path="/workflows/:id/runs" element={<WorkflowRuns />} />
+        <Route path="/workflow-runs/:id" element={<RunHistory />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-                {/* Routes with Navbar */}
-                <Route element={<Layout />}>
-                    <Route path="/" element={<Hero />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/integrations" element={<Dashboard />} />
-                    <Route path="/billing" element={<Billing />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/services" element={<Hero />} />
-                    <Route path="/graphql" element={<Dashboard />} />
-                </Route>
+        {/* Routes with Navbar */}
+        <Route element={<Layout />}>
+          <Route path="/" element={<Hero />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/integrations" element={<Integrations />} />
+          <Route path="/graphql" element={<GraphQL />} />
+          <Route path="/billing" element={<Billing />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
 
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-        </BrowserRouter>
-    );
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
