@@ -6,6 +6,7 @@ function Profile() {
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [usage, setUsage] = useState(null);
+    const [subscription, setSubscription] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [mounted, setMounted] = useState(false);
@@ -19,10 +20,12 @@ function Profile() {
         Promise.all([
             api.get("/me"),
             api.get("/billing/usage"),
+            api.get("/billing/subscription"),
         ])
-            .then(([profileRes, usageRes]) => {
+            .then(([profileRes, usageRes, subRes]) => {
                 setProfile(profileRes.data || profileRes);
                 setUsage(usageRes.data || usageRes);
+                setSubscription(subRes.data || subRes);
                 setLoading(false);
             })
             .catch((err) => {
@@ -44,9 +47,10 @@ function Profile() {
         return email.split("@")[0].slice(0, 2).toUpperCase();
     };
 
+    const currentPlan = subscription?.plan || profile?.plan || "free";
     const runs = usage?.workflow_runs || 0;
-    const limit = 100;
-    const percent = Math.min((runs / limit) * 100, 100);
+    const limit = usage?.workflow_limit || (currentPlan === "pro" ? Infinity : 100);
+    const percent = limit === Infinity ? 0 : Math.min((runs / limit) * 100, 100);
 
     if (loading) {
         return (
@@ -110,7 +114,7 @@ function Profile() {
                     <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                             <h1 style={S.name}>{profile?.email?.split("@")[0] || "User"}</h1>
-                            <span style={S.planBadge}>{profile?.plan || "free"}</span>
+                            <span style={S.planBadge}>{currentPlan}</span>
                             {profile?.is_verified && (
                                 <span style={S.verifiedBadge}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -180,15 +184,15 @@ function Profile() {
                                 </svg>
                             </div>
                             <div>
-                                <div style={S.subPlan}>{profile?.plan || "Free"}</div>
+                                <div style={S.subPlan}>{currentPlan}</div>
                                 <div style={S.subStatus}>Active</div>
                             </div>
                         </div>
 
                         <div style={S.subFeatures}>
                             {[
-                                `${profile?.plan === "pro" ? "Unlimited" : "100"} workflow runs`,
-                                `${profile?.plan === "pro" ? "Priority" : "Community"} support`
+                                `${currentPlan === "pro" ? "Unlimited" : limit} workflow runs`,
+                                `${currentPlan === "pro" ? "Priority" : "Community"} support`
                             ].map((f, i) => (
                                 <div key={i} style={S.subFeature}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
