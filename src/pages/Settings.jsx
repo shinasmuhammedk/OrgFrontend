@@ -59,7 +59,7 @@ export default function Settings() {
                 opacity: mounted ? 1 : 0,
                 transform: mounted ? "none" : "translateY(16px)",
                 transition: "opacity 0.6s ease, transform 0.6s ease"
-            }}>
+            }} className="s-page">
                 {/* Header */}
                 <div style={S.header}>
                     <div style={S.sectionLabel}>Account</div>
@@ -67,7 +67,7 @@ export default function Settings() {
                     <p style={S.subtitle}>Manage your account preferences, notifications, and security.</p>
                 </div>
 
-                <div style={S.layout}>
+                <div style={S.layout} className="settings-layout">
                     {/* Sidebar Tabs */}
                     <div style={S.sidebar}>
                         {tabs.map(tab => (
@@ -115,7 +115,7 @@ export default function Settings() {
                                         <span style={S.fieldHint}>Contact support to change your email address.</span>
                                     </div>
 
-                                    <div style={S.fieldRow}>
+                                    <div style={S.fieldRow} className="s-field-row">
                                         <div style={{ flex: 1 }}>
                                             <label style={S.fieldLabel}>Timezone</label>
                                             <select
@@ -147,7 +147,7 @@ export default function Settings() {
                                         </div>
                                     </div>
 
-                                    <div style={{ ...S.fieldRow, marginTop: 20 }}>
+                                    <div style={{ ...S.fieldRow, marginTop: 20 }} className="s-field-row">
                                         <div style={{ flex: 1 }}>
                                             <label style={S.fieldLabel}>Theme</label>
                                             <select
@@ -465,5 +465,7 @@ const CSS = `
 
     @media (max-width: 768px) {
         .settings-layout { flex-direction: column !important; }
+        .s-page { padding: 90px 20px 60px !important; }
+        .s-field-row { flex-direction: column !important; gap: 12px !important; }
     }
 `;

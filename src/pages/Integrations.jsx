@@ -23,15 +23,15 @@ export default function Integrations() {
                 opacity: mounted ? 1 : 0, 
                 transform: mounted ? "none" : "translateY(16px)",
                 transition: "opacity 0.6s ease, transform 0.6s ease"
-            }}>
+            }} className="m-page">
                 <div style={S.header}>
                     <div style={S.sectionLabel}>Integrations</div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }} className="m-header-row">
                         <div>
                             <h1 style={S.h1}>App Integrations</h1>
                             <p style={S.subtitle}>Connect your favorite tools to automate workflows seamlessly.</p>
                         </div>
-                        <div style={S.searchBox}>
+                        <div style={S.searchBox} className="m-search">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round">
                                 <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
                             </svg>
@@ -135,7 +135,7 @@ const S = {
     },
     grid: {
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
         gap: 20,
     },
     card: {
@@ -210,5 +210,10 @@ const CSS = `
   .i-btn-connect:hover {
     background: #fafafa;
     border-color: #ccc;
+  }
+  @media (max-width: 768px) {
+    .m-page { padding: 90px 20px 60px !important; }
+    .m-header-row { flex-direction: column; gap: 16px; align-items: stretch !important; }
+    .m-search { width: 100% !important; }
   }
 `;

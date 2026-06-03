@@ -155,6 +155,7 @@ function Billing() {
           transform: mounted ? "none" : "translateY(16px)",
           transition: "opacity 0.6s ease 0.05s, transform 0.6s ease 0.05s",
         }}
+        className="b-page"
       >
         {/* ── Header ── */}
         <div style={S.header}>
@@ -194,6 +195,7 @@ function Billing() {
             opacity: mounted ? 1 : 0,
             transition: "opacity 0.6s ease 0.15s",
           }}
+          className="b-stats-strip"
         >
           {[
             { val: runs, label: "Runs this period" },
@@ -776,13 +778,16 @@ const CSS = `
   }
 
   @media (max-width: 860px) {
-    div[style*="repeat(3, 1fr)"] {
+    .b-cards-grid {
       grid-template-columns: 1fr !important;
     }
+    .b-stats-strip {
+      flex-direction: column !important;
+    }
   }
-  @media (max-width: 640px) {
-    div[style*="padding: 40px 40px"] {
-      padding: 24px 20px 60px !important;
+  @media (max-width: 768px) {
+    .b-page {
+      padding: 90px 20px 60px !important;
     }
   }
 `;

@@ -100,7 +100,7 @@ function Profile() {
                 opacity: mounted ? 1 : 0,
                 transform: mounted ? "none" : "translateY(16px)",
                 transition: "opacity 0.6s ease, transform 0.6s ease"
-            }}>
+            }} className="p-page">
                 {/* Section Label */}
                 <div style={S.sectionLabel}>Profile</div>
 
@@ -460,5 +460,6 @@ const CSS = `
     .p-btn-danger:hover { background: #fef2f2; border-color: #ef4444; transform: translateY(-1px); }
     @media (max-width: 768px) {
         .p-grid { grid-template-columns: 1fr !important; }
+        .p-page { padding: 90px 20px 60px !important; }
     }
 `;

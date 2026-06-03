@@ -315,7 +315,7 @@ function Dashboard() {
                 </div>
             )}
 
-            <div style={S.page}>
+            <div style={S.page} className="m-page">
 
                 {/* Topbar */}
                 <div style={{
@@ -325,7 +325,7 @@ function Dashboard() {
                     transition: "opacity 0.5s ease, transform 0.5s ease",
                 }}>
                     <span style={S.logo}>ORG</span>
-                    <div style={S.topbarRight}>
+                    <div style={S.topbarRight} className="m-topbar-right">
                         <span style={S.topbarMeta}>
                             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
                         </span>
@@ -347,7 +347,7 @@ function Dashboard() {
                     transform: mounted ? "none" : "translateY(12px)",
                     transition: "opacity 0.5s ease 0.05s, transform 0.5s ease 0.05s",
                 }}>
-                    <h1 style={S.h1}>Workflows</h1>
+                    <h1 style={S.h1} className="m-h1">Workflows</h1>
                     <p style={S.subtitle}>Manage and monitor all your automations.</p>
                 </div>
 
@@ -356,7 +356,7 @@ function Dashboard() {
                     ...S.statsRow,
                     opacity: mounted ? 1 : 0,
                     transition: "opacity 0.5s ease 0.1s",
-                }}>
+                }} className="m-stats-row">
                     {[
                         { label: "Total", value: stats.total },
                         { label: "Active", value: stats.active },
@@ -389,7 +389,7 @@ function Dashboard() {
                             <button style={S.clearBtn} onClick={() => setSearchQuery("")}>×</button>
                         )}
                     </div>
-                    <div style={S.filters}>
+                    <div style={S.filters} className="m-filters">
                         {["all", "active", "inactive"].map((f) => (
                             <button
                                 key={f}
@@ -519,7 +519,7 @@ const S = {
         color: "#111",
         fontFamily: "'Geist', 'Inter', 'Helvetica Neue', sans-serif",
     },
-    page: { maxWidth: 1100, margin: "0 auto", padding: "0 40px 80px" },
+    page: { maxWidth: 1100, margin: "0 auto", padding: "120px 40px 80px" },
     topbar: {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "28px 0 20px", marginBottom: 56, borderBottom: "1px solid #e5e5e5",
@@ -727,7 +727,16 @@ const CSS = `
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  @media (max-width: 700px) {
+  @media (max-width: 768px) {
     .m-table-desc, .m-table-date { display: none; }
+    .m-page { padding: 90px 20px 60px !important; }
+    .m-topbar { flex-direction: column; align-items: flex-start !important; gap: 16px; padding: 16px 0 !important; margin-bottom: 32px !important; }
+    .m-stats-row { flex-direction: column; }
+    .m-stat { border-right: none !important; border-bottom: 1px solid #e5e5e5; padding: 16px 0 16px 16px !important; }
+    .m-stat:last-child { border-bottom: none; }
+    .m-toolbar { flex-direction: column; align-items: stretch !important; gap: 12px; }
+    .m-search { max-width: 100% !important; }
+    .m-filters { justify-content: space-between; }
+    .m-h1 { font-size: 1.8rem !important; }
   }
 `;

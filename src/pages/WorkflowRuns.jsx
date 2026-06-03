@@ -40,7 +40,7 @@ function WorkflowRuns() {
     };
 
     return (
-        <div style={S.root}>
+        <div style={S.root} className="m-root">
             <style>{CSS}</style>
             <div style={S.gridBg} aria-hidden />
 
@@ -88,7 +88,7 @@ function WorkflowRuns() {
                                 <div
                                     key={runId}
                                     onClick={() => navigate(`/workflow-runs/${runId}`)}
-                                    className="run-card"
+                                    className="run-card m-run-card"
                                 >
                                     <div style={S.cardLeft}>
                                         <div style={S.cardIcon}>
@@ -193,6 +193,10 @@ const CSS = `
         background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite;
     }
     @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    @media (max-width: 768px) {
+        .m-root { padding: 90px 20px 60px !important; }
+        .m-run-card { flex-direction: column; align-items: flex-start !important; gap: 16px; }
+    }
 `;
 
 export default WorkflowRuns;

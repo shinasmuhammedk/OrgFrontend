@@ -14,10 +14,10 @@ export default function GraphQL() {
                 opacity: mounted ? 1 : 0, 
                 transform: mounted ? "none" : "translateY(16px)",
                 transition: "opacity 0.6s ease, transform 0.6s ease"
-            }}>
+            }} className="m-page">
                 <div style={S.header}>
                     <div style={S.sectionLabel}>API</div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }} className="m-header-row">
                         <div>
                             <h1 style={S.h1}>GraphQL API</h1>
                             <p style={S.subtitle}>Access your workflow data and trigger runs programmatically.</p>
@@ -226,5 +226,10 @@ const CSS = `
   .g-btn-icon:hover {
     background: #e5e5e5;
     color: #111;
+  }
+  @media (max-width: 768px) {
+    .m-page { padding: 90px 20px 60px !important; }
+    .m-header-row { flex-direction: column; gap: 16px; align-items: stretch !important; }
+    .m-header-row button { width: 100%; justify-content: center; }
   }
 `;

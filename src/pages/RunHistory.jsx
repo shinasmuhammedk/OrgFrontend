@@ -139,7 +139,7 @@ function RunHistory() {
   }, 0);
 
   return (
-    <div style={S.root}>
+    <div style={S.root} className="rh-root">
       <style>{CSS}</style>
       <div style={S.gridBg} aria-hidden />
 
@@ -646,8 +646,9 @@ const CSS = `
     .rh-steps { max-height: none; }
   }
   @media (max-width: 768px) {
-    .rh-root { padding: 20px 16px !important; }
+    .rh-root { padding: 40px 16px 60px !important; }
     .rh-stats { grid-template-columns: repeat(2, 1fr) !important; }
+    .rh-search { max-width: 100%; }
   }
 `;
 
