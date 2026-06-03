@@ -149,3 +149,22 @@
   stroke: #111827 !important;
   stroke-width: 3px !important;
 }
+
+/* Mobile-specific React Flow adjustments */
+@media (max-width: 639px) {
+  /* Enlarge touch targets for controls */
+  .react-flow__controls button {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Compact controls panel */
+  .react-flow__controls {
+    margin-bottom: 56px;
+  }
+
+  /* Prevent horizontal overflow on touch devices */
+  .react-flow {
+    touch-action: none;
+  }
+}

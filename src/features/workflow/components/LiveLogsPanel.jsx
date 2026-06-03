@@ -26,7 +26,7 @@ export default function LiveLogsPanel({ liveLogs = [] }) {
     if (!visible) return null;
 
     return (
-        <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl bg-bg-panel border border-white/10 rounded-t-xl transition-all duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-40 ${expanded ? "h-64" : "h-10"}`}
+        <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[calc(100%-0.5rem)] sm:w-full max-w-4xl bg-bg-panel border border-white/10 rounded-t-xl transition-all duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-40 ${expanded ? "h-48 sm:h-64" : "h-10"}`}
         >
             {/* Header */}
             <div

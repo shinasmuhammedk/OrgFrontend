@@ -63,8 +63,19 @@ function NodeConfigPanel({
                     from { transform: translateX(100%); opacity: 0; }
                     to { transform: translateX(0); opacity: 1; }
                 }
-                .config-panel-root {
-                    animation: slideRight 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+                @keyframes slideUp {
+                    from { transform: translateY(100%); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                @media (min-width: 640px) {
+                    .config-panel-root {
+                        animation: slideRight 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+                    }
+                }
+                @media (max-width: 639px) {
+                    .config-panel-root {
+                        animation: slideUp 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+                    }
                 }
                 .config-field:focus {
                     border-color: #111 !important;
@@ -105,19 +116,21 @@ function NodeConfigPanel({
                 }
             `}</style>
 
+            {/* Mobile overlay backdrop */}
+            <div
+                className="fixed inset-0 bg-black/40 z-40 sm:hidden"
+                onClick={() => setSelectedNode(null)}
+            />
+
             <div
                 className="config-panel-root"
                 style={{
                     position: "fixed",
-                    right: 0,
-                    top: 0,
-                    height: "100vh",
-                    width: configWidth || 380,
+                    zIndex: 50,
                     background: "#fff",
                     borderLeft: "1px solid #e5e5e5",
                     padding: "24px 22px",
                     overflowY: "auto",
-                    zIndex: 50,
                     boxShadow: "-4px 0 24px rgba(0,0,0,0.06)",
                     display: "flex",
                     flexDirection: "column",
@@ -125,6 +138,29 @@ function NodeConfigPanel({
                     fontFamily: "'Geist', 'Inter', sans-serif",
                 }}
             >
+                {/* Responsive positioning via inline media query styles */}
+                <style>{`
+                    .config-panel-root {
+                        right: 0;
+                        top: 0;
+                        height: 100vh;
+                        width: ${configWidth || 380}px;
+                    }
+                    @media (max-width: 639px) {
+                        .config-panel-root {
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            top: auto;
+                            width: 100% !important;
+                            height: 75vh !important;
+                            border-left: none !important;
+                            border-top: 1px solid #e5e5e5 !important;
+                            border-radius: 16px 16px 0 0;
+                            box-shadow: 0 -8px 30px rgba(0,0,0,0.15) !important;
+                        }
+                    }
+                `}</style>
                 {/* Panel Header */}
                 <div
                     style={{

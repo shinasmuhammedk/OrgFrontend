@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Webhook,
     Globe,
@@ -44,11 +44,20 @@ const PaletteNode = ({ icon: Icon, title, type, onDragStart, disabled, colorClas
 };
 
 export default function NodeLibrary({ onDragStart }) {
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(() => window.innerWidth >= 640);
+
+    // Auto-collapse on mobile resize
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 640) setExpanded(false);
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     return (
-        <div className={`absolute top-24 left-4 z-40 transition-all duration-300 ease-in-out ${expanded ? "w-[240px]" : "w-[60px]"}`}>
-            <div className="glass-panel overflow-hidden h-[calc(100vh-140px)] flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div className={`absolute top-20 sm:top-24 left-2 sm:left-4 z-40 transition-all duration-300 ease-in-out ${expanded ? "w-[200px] sm:w-[240px]" : "w-[48px] sm:w-[60px]"}`}>
+            <div className="glass-panel overflow-hidden h-[calc(100vh-120px)] sm:h-[calc(100vh-140px)] flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
 
                 {/* Header */}
                 <div className="p-4 flex items-center justify-between border-b border-white/5 shrink-0 bg-white/5">

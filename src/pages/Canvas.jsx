@@ -22,9 +22,20 @@ import { useWorkflowExecution } from "../features/workflow/hooks/useWorkflowExec
 import { useWorkflowRuns } from "../features/workflow/hooks/useWorkflowRuns";
 import { useToast } from "../features/workflow/hooks/useToast";
 import { S, CSS } from "../styles/shared";
+
+function useIsMobile(breakpoint = 640) {
+    const [isMobile, setIsMobile] = useState(window.innerWidth < breakpoint);
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth < breakpoint);
+        window.addEventListener("resize", handler);
+        return () => window.removeEventListener("resize", handler);
+    }, [breakpoint]);
+    return isMobile;
+}
 function Canvas() {
     const navigate = useNavigate();
     const { id } = useParams();
+    const isMobile = useIsMobile();
 
     const [error, setError] = useState("");
     const [liveLogs, setLiveLogs] = useState([]);
@@ -198,7 +209,7 @@ function Canvas() {
             {/* Main Canvas Area */}
             <div
                 className="w-full h-full"
-                style={{ paddingRight: selectedNode ? `${CONFIG_W}px` : "0px", transition: "padding-right 0.35s cubic-bezier(0.4,0,0.2,1)" }}
+                style={{ paddingRight: !isMobile && selectedNode ? `${CONFIG_W}px` : "0px", transition: "padding-right 0.35s cubic-bezier(0.4,0,0.2,1)" }}
             >
                 <ReactFlow
                     nodes={nodes}
@@ -218,7 +229,6 @@ function Canvas() {
                     nodeTypes={nodeTypes}
                     fitView
                     fitViewOptions={{ padding: 1 }}
-                    onConnect={onConnect}
                     connectionLineStyle={{
                         stroke: "#00d97e",
                         strokeWidth: 3,
@@ -226,11 +236,11 @@ function Canvas() {
                     connectionLineType="smoothstep"
                 >
                     <Background color="rgba(255,255,255,0.05)" gap={24} size={2} className="dotted-bg" />
-                    <Controls className="glass-panel border-none shadow-[0_10px_30px_rgba(0,0,0,0.5)] fill-text-primary mb-24" />
+                    <Controls className="glass-panel border-none shadow-[0_10px_30px_rgba(0,0,0,0.5)] fill-text-primary mb-16 sm:mb-24" />
 
                     {/* Modern MiniMap */}
                     <MiniMap
-                        className="glass-panel overflow-hidden border-white/10 mb-24"
+                        className="glass-panel overflow-hidden border-white/10 mb-16 sm:mb-24 hidden sm:block"
                         nodeColor={(n) => {
                             if (n.type === "webhookTrigger") return "#f59e0b";
                             if (n.type === "httpRequest") return "#22d3ee";
