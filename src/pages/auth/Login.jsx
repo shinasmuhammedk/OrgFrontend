@@ -165,7 +165,7 @@ export default function Login() {
                     <button
                         className="auth-btn-ghost"
                         onClick={() => {
-                            window.location.href = `${API_URL}/auth/google/start`;
+                            window.location.href = `${API_URL}/auth/google/login`;
                         }}
                          disabled={loading}
                     >
