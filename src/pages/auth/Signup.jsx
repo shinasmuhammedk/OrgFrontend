@@ -89,7 +89,7 @@ export default function Signup() {
             setError("Password must be at least 6 characters");
             return;
         }
-        const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             setError("Please enter a valid email address");
             return;
