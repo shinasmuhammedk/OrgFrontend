@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../../services/api";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+
 const EyeOpen = () => (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.3">
         <path d="M1 7.5C1 7.5 3.5 3 7.5 3s6.5 4.5 6.5 4.5-2.5 4.5-6.5 4.5S1 7.5 1 7.5z" />
@@ -32,7 +35,7 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
-    
+
     const handleLogin = async () => {
         setError("");
         if (!email || !password) {
@@ -105,7 +108,7 @@ export default function Login() {
                     <div style={S.formGroup}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                             <label style={{ ...S.label, marginBottom: 0 }}>Password</label>
-                            <span 
+                            <span
                                 onClick={() => navigate("/forgot-password")}
                                 className="auth-forgot"
                             >
@@ -161,13 +164,15 @@ export default function Login() {
 
                     <button
                         className="auth-btn-ghost"
-                        onClick={() => window.location.href = "http://localhost:8080/auth/google/start"}
-                        disabled={loading}
+                        onClick={() => {
+                            window.location.href = `${API_URL}/auth/google/start`;
+                        }}
+                         disabled={loading}
                     >
                         <GoogleIcon />
                         Continue with Google
                     </button>
-                    
+
                     <p style={S.footerText}>
                         Don't have an account?{" "}
                         <Link to="/signup" className="auth-link">

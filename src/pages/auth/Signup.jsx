@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../../services/api";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+
 const EyeOpen = () => (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.3">
         <path d="M1 7.5C1 7.5 3.5 3 7.5 3s6.5 4.5 6.5 4.5-2.5 4.5-6.5 4.5S1 7.5 1 7.5z" />
@@ -72,6 +75,7 @@ export default function Signup() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+
 
     const handleSignup = async () => {
         setError("");
@@ -151,7 +155,7 @@ export default function Signup() {
                             {error}
                         </div>
                     )}
-                    
+
                     {success && (
                         <div style={S.successBanner}>
                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginTop: 2, flexShrink: 0 }}>
@@ -253,13 +257,14 @@ export default function Signup() {
 
                     <button
                         className="auth-btn-ghost"
-                        onClick={() => window.location.href = "http://localhost:8080/auth/google/start"}
-                        disabled={loading}
+                        onClick={() => {
+                            window.location.href = `${API_URL}/auth/google/start`;
+                        }} disabled={loading}
                     >
                         <GoogleIcon />
                         Sign up with Google
                     </button>
-                    
+
                     <p style={S.footerText}>
                         Already have an account?{" "}
                         <Link to="/login" className="auth-link">

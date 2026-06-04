@@ -5,9 +5,12 @@ export function useWorkflowLiveLogs(workflowId, setNodes) {
 
     useEffect(() => {
         if (!workflowId) return;
+        
+        const API_URL = import.meta.env.VITE_API_URL;
+
 
         const eventSource = new EventSource(
-            `http://localhost:8080/workflows/${workflowId}/events`
+            `${API_URL}/workflows/${workflowId}/events`
         );
 
         eventSource.addEventListener("workflow_update", (event) => {
