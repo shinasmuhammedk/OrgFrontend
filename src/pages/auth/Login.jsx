@@ -5,7 +5,7 @@ import api from "../../services/api";
 const API_URL = import.meta.env.VITE_API_URL;
 
 //this comment is for testing the github trigger system.
-//again this is for testing purpose
+
 
 const EyeOpen = () => (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.3">
