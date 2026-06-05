@@ -17,6 +17,7 @@ import GraphQL from "./pages/GraphQL";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import OAuthCallback from "./pages/OAuthCallback";
+import Contact from "./pages/Contact";
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
           <Route path="/billing" element={<Billing />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/contact" element={<Contact />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

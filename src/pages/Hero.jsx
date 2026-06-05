@@ -1,31 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-/* ─── Animated number counter ─── */
-function Counter({ target, suffix = "" }) {
-    const [val, setVal] = useState(0);
-    const ref = useRef();
-    useEffect(() => {
-        const io = new IntersectionObserver(([e]) => {
-            if (!e.isIntersecting) return;
-            io.disconnect();
-            const numeric = parseFloat(target);
-            const frames = 60;
-            let i = 0;
-            const id = setInterval(() => {
-                i++;
-                const ease = 1 - Math.pow(1 - i / frames, 3);
-                setVal(Math.min(numeric, numeric * ease));
-                if (i >= frames) clearInterval(id);
-            }, 16);
-        });
-        if (ref.current) io.observe(ref.current);
-        return () => io.disconnect();
-    }, [target]);
-    const isFloat = typeof target === "string" ? target.includes(".") : target % 1 !== 0;
-    return <span ref={ref}>{isFloat ? val.toFixed(1) : Math.round(val)}{suffix}</span>;
-}
-
 /* ─── Staggered reveal hook ─── */
 function useReveal(delay = 0) {
     const ref = useRef();
@@ -74,46 +49,346 @@ const STEPS = [
     { label: "Monitor", detail: "Inspect every execution live. Replay failures, alert on anomalies, never fly blind.", hint: "Real-time visibility" },
 ];
 
-const LOGOS = ["Slack", "Stripe", "GitHub", "Notion", "AWS", "Linear", "Figma", "Airtable", "Twilio", "Vercel"];
+const LOGOS = ["Webhook Triggers", "AI Node Generation", "Docker Deployments", "Custom Logic Nodes", "Team Collaboration"];
 
-const TESTIMONIALS = [
-    { quote: "ORG cut our integration time from weeks to hours. It's the automation layer we always wanted.", name: "Sarah Chen", role: "Staff Engineer, Vercel" },
-    { quote: "The GraphQL-first approach is genius. Our frontend team can query workflow state directly.", name: "Marcus Webb", role: "CTO, Linear" },
-    { quote: "We replaced 4 internal tools with ORG. Deployment went from a chore to a celebration.", name: "Priya Nair", role: "Head of Platform, Loom" },
-];
+/* ─── Connector arrow between nodes ─── */
+const Connector = () => (
+    <div style={{ width: 36, flexShrink: 0, position: "relative", display: "flex", alignItems: "center" }}>
+        <div style={{
+            width: "100%",
+            height: 1.5,
+            background: "repeating-linear-gradient(90deg, #10b981 0, #10b981 4px, transparent 4px, transparent 8px)",
+        }} />
+        <div style={{
+            position: "absolute",
+            right: 0,
+            width: 0,
+            height: 0,
+            borderTop: "4px solid transparent",
+            borderBottom: "4px solid transparent",
+            borderLeft: "5px solid #10b981",
+        }} />
+    </div>
+);
 
+/* ─── Mock Canvas ─── */
+const MockCanvas = () => (
+    <div style={MC.shell}>
+        {/* Topbar */}
+        <div style={MC.topbar}>
+            <div style={MC.tbLeft}>
+                <span style={{ color: "#666", fontSize: 12, cursor: "pointer" }}>←</span>
+                <div>
+                    <div style={{ color: "#fff", fontSize: 11, fontWeight: 600, fontFamily: "monospace" }}>
+                        Workflow 030ddc
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#888", fontSize: 9, marginTop: 1 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
+                        Draft Saved · Last run 2m ago
+                    </div>
+                </div>
+            </div>
+            <div style={MC.tbRight}>
+                {["💾 Save", "🔗 Share", "⏱ History"].map(a => (
+                    <span key={a} style={MC.tbAction}>{a}</span>
+                ))}
+                <span style={MC.tbDeploy}>🚀 Deploy</span>
+                <span style={MC.tbRun}>▶ Run</span>
+            </div>
+        </div>
+
+        {/* Body */}
+        <div style={MC.body}>
+            {/* Sidebar */}
+            <div style={MC.sidebar}>
+                <div style={MC.sbHead}>
+                    <span>📦 NODES</span>
+                    <span style={{ color: "#444" }}>&lt;</span>
+                </div>
+
+                <div style={MC.sbSection}>⚡ Triggers</div>
+                <div style={MC.sbItem}><span style={{ color: "#f59e0b" }}>⚡</span> Webhook</div>
+
+                <div style={{ ...MC.sbSection, color: "#60a5fa" }}>⚙ Actions</div>
+                <div style={MC.sbItem}><span>🌐</span> HTTP Request</div>
+                <div style={MC.sbItem}><span>✉️</span> Send Email</div>
+                <div style={MC.sbItem}><span style={{ color: "#10b981" }}>🤖</span> AI</div>
+
+                <div style={{ ...MC.sbSection, color: "#f472b6" }}>🔀 Logic</div>
+                <div style={MC.sbItem}><span style={{ color: "#f472b6" }}>⑃</span> Condition</div>
+                <div style={MC.sbItem}><span style={{ color: "#10b981" }}>⏱</span> Delay</div>
+            </div>
+
+            {/* Canvas Area */}
+            <div style={MC.canvasArea}>
+                {/* Nodes Row */}
+                <div style={MC.nodesRow}>
+                    {/* Webhook Node */}
+                    <div style={MC.node}>
+                        <div style={MC.nodeDot} />
+                        <div style={MC.nodeHeader}>
+                            <span style={{ fontSize: 11, color: "#f59e0b" }}>⚡</span>
+                            <span style={MC.nodeTitle}>Webhook Trigger</span>
+                        </div>
+                        <div style={MC.fieldLabel}>Endpoint URL</div>
+                        <div style={MC.fieldVal}>https://org.../webhook</div>
+                        <div style={MC.nodeFooter}>
+                            <span style={MC.footLabel}>Status:</span>
+                            <span style={MC.footOk}>● Success</span>
+                        </div>
+                    </div>
+
+                    <Connector />
+
+                    {/* AI Node */}
+                    <div style={MC.node}>
+                        <div style={MC.nodeDot} />
+                        <div style={MC.nodeHeader}>
+                            <span style={{ fontSize: 11, color: "#10b981" }}>🤖</span>
+                            <span style={MC.nodeTitle}>AI</span>
+                        </div>
+                        <div style={MC.kvBox}>
+                            <div style={MC.kvRow}>
+                                <span style={MC.kvKey}>Model:</span>
+                                <span style={MC.kvVal}>gemini-2.5-flash</span>
+                            </div>
+                            <div style={MC.kvRow}>
+                                <span style={MC.kvKey}>Prompt:</span>
+                                <span style={{ ...MC.kvVal, color: "#555" }}>You are a GitHub event...</span>
+                            </div>
+                        </div>
+                        <div style={MC.nodeFooter}>
+                            <span style={MC.footLabel}>Status:</span>
+                            <span style={MC.footOk}>● Success</span>
+                        </div>
+                    </div>
+
+                    <Connector />
+
+                    {/* Email Node */}
+                    <div style={MC.node}>
+                        <div style={MC.nodeDot} />
+                        <div style={MC.nodeHeader}>
+                            <span style={{ fontSize: 11, color: "#888" }}>✉️</span>
+                            <span style={MC.nodeTitle}>Send Email</span>
+                        </div>
+                        <div style={MC.kvBox}>
+                            <div style={MC.kvRow}>
+                                <span style={MC.kvKey}>To:</span>
+                                <span style={MC.kvVal}>user@example.com</span>
+                            </div>
+                            <div style={MC.kvRow}>
+                                <span style={MC.kvKey}>Sub:</span>
+                                <span style={{ ...MC.kvVal, color: "#555" }}>GitHub Push...</span>
+                            </div>
+                        </div>
+                        <div style={MC.nodeFooter}>
+                            <span style={MC.footLabel}>Status:</span>
+                            <span style={MC.footOk}>● Success</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Live Logs */}
+                <div style={MC.logsBar}>
+                    <div style={MC.logsHead}>
+                        <span>&gt;_ LIVE EXECUTION LOGS</span>
+                        <span style={{ color: "#333" }}>_ □ ✕</span>
+                    </div>
+                    {[
+                        { color: "#f59e0b", text: "[7:11:24 PM] Workflow execution started..." },
+                        { color: "#10b981", text: "[7:12:00 PM] webhookTrigger — success" },
+                        { color: "#10b981", text: "[7:12:00 PM] aiNode — success" },
+                        { color: "#10b981", text: "[7:12:00 PM] emailNode — success" },
+                    ].map((l, i) => (
+                        <div key={i} style={{ fontFamily: "monospace", fontSize: 8, lineHeight: 1.7, color: l.color }}>
+                            {l.text}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Minimap */}
+                <div style={MC.minimap}>
+                    <div style={{ position: "relative", width: 64, height: 40 }}>
+                        <div style={{ position: "absolute", top: 19, left: 10, width: 44, height: 1, background: "#10b981", opacity: 0.6 }} />
+                        {[
+                            { left: 4, bg: "#f59e0b" },
+                            { left: 25, bg: "#10b981" },
+                            { left: 46, bg: "#60a5fa" },
+                        ].map((m, i) => (
+                            <div key={i} style={{
+                                position: "absolute", top: 14, left: m.left,
+                                width: 14, height: 9, background: m.bg,
+                                opacity: 0.7, borderRadius: 2,
+                            }} />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+/* ─── MockCanvas Styles ─── */
+const MC = {
+    shell: {
+        background: "#fff",
+        border: "1px solid #e5e5e5",
+        borderRadius: 14,
+        overflow: "hidden",
+        fontFamily: "'Inter', 'SF Pro Display', sans-serif",
+        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 16px 48px -8px rgba(0,0,0,0.08)",
+    },
+    topbar: {
+        background: "#18181b",
+        height: 40,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 12px",
+        gap: 8,
+    },
+    tbLeft: { display: "flex", alignItems: "center", gap: 10 },
+    tbRight: { display: "flex", alignItems: "center", gap: 6 },
+    tbAction: {
+        color: "#888", fontSize: 9, padding: "3px 7px",
+        border: "0.5px solid #333", borderRadius: 4, cursor: "pointer",
+    },
+    tbDeploy: {
+        color: "#ccc", fontSize: 9, padding: "3px 8px",
+        border: "0.5px solid #444", borderRadius: 4, cursor: "pointer", background: "#2a2a2e",
+    },
+    tbRun: {
+        color: "#fff", fontSize: 9, padding: "3px 8px",
+        border: "none", borderRadius: 4, cursor: "pointer",
+        background: "#10b981", fontWeight: 600,
+    },
+    body: { display: "flex", height: 300 },
+    sidebar: {
+        width: 130,
+        background: "#18181b",
+        borderRight: "0.5px solid #2a2a2e",
+        padding: "10px 8px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 3,
+        overflow: "hidden",
+        flexShrink: 0,
+    },
+    sbHead: {
+        color: "#555", fontSize: 8, fontWeight: 700, letterSpacing: ".06em",
+        padding: "4px 4px 6px", display: "flex", justifyContent: "space-between",
+    },
+    sbSection: {
+        color: "#f59e0b", fontSize: 7.5, fontWeight: 700,
+        letterSpacing: ".07em", padding: "6px 4px 3px", textTransform: "uppercase",
+    },
+    sbItem: {
+        padding: "5px 7px", background: "#222228", borderRadius: 4,
+        color: "#d4d4d8", fontSize: 8.5,
+        display: "flex", alignItems: "center", gap: 5, cursor: "pointer",
+    },
+    canvasArea: {
+        flex: 1,
+        background: "#f4f4f5",
+        backgroundImage: "radial-gradient(circle, #d4d4d8 1px, transparent 1px)",
+        backgroundSize: "20px 20px",
+        position: "relative",
+        overflow: "hidden",
+    },
+    nodesRow: {
+        position: "absolute",
+        top: "50%",
+        left: 0,
+        right: 0,
+        transform: "translateY(-60%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 20px",
+    },
+    node: {
+        background: "#18181b",
+        border: "1px solid #10b981",
+        borderRadius: 7,
+        padding: "10px 11px",
+        width: 148,
+        flexShrink: 0,
+        position: "relative",
+        boxShadow: "0 0 0 2px rgba(16,185,129,.15)",
+    },
+    nodeDot: {
+        position: "absolute", top: 7, right: 7,
+        width: 5, height: 5, borderRadius: "50%", background: "#10b981",
+    },
+    nodeHeader: { display: "flex", alignItems: "center", gap: 6, marginBottom: 8 },
+    nodeTitle: { color: "#fff", fontSize: 10, fontWeight: 600 },
+    fieldLabel: {
+        color: "#555", fontSize: 7.5, textTransform: "uppercase",
+        letterSpacing: ".05em", marginBottom: 3,
+    },
+    fieldVal: {
+        background: "#0e0e11", borderRadius: 3, padding: "4px 6px",
+        color: "#a1a1aa", fontSize: 8, fontFamily: "monospace",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+    },
+    kvBox: {
+        display: "flex", flexDirection: "column", gap: 2,
+        background: "#0e0e11", borderRadius: 3, padding: "5px 6px",
+    },
+    kvRow: { display: "flex", gap: 4, fontSize: 8, fontFamily: "monospace" },
+    kvKey: { color: "#555", minWidth: 36 },
+    kvVal: { color: "#a1a1aa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+    nodeFooter: {
+        display: "flex", justifyContent: "space-between",
+        alignItems: "center", marginTop: 7, fontSize: 8,
+    },
+    footLabel: { color: "#555" },
+    footOk: { color: "#10b981" },
+    logsBar: {
+        position: "absolute",
+        bottom: 10, left: 10, right: 106,
+        background: "#0e0e11",
+        border: "0.5px solid #2a2a2e",
+        borderRadius: 6,
+        padding: "8px 10px",
+    },
+    logsHead: {
+        color: "#555", fontSize: 8, fontWeight: 700, letterSpacing: ".05em",
+        marginBottom: 5, display: "flex", justifyContent: "space-between",
+    },
+    minimap: {
+        position: "absolute",
+        bottom: 10, right: 10,
+        width: 86, height: 64,
+        background: "#18181b",
+        border: "0.5px solid #2a2a2e",
+        borderRadius: 6,
+        overflow: "hidden",
+        display: "flex", alignItems: "center", justifyContent: "center",
+    },
+};
+
+/* ─── Hero Page ─── */
 export default function Hero() {
     const navigate = useNavigate();
     const [activeStep, setActiveStep] = useState(0);
     const [mounted, setMounted] = useState(false);
-    const [activeTesti, setActiveTesti] = useState(0);
     const [menuOpen, setMenuOpen] = useState(false);
 
     useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
-
-    // Auto-advance testimonials
-    useEffect(() => {
-        const t = setInterval(() => setActiveTesti(p => (p + 1) % TESTIMONIALS.length), 4000);
-        return () => clearInterval(t);
-    }, []);
 
     const goApp = () => {
         const token = localStorage.getItem("token");
         navigate(token ? "/dashboard" : "/login");
     };
 
-    const today = new Date().toLocaleDateString("en-US", {
-        weekday: "long", month: "long", day: "numeric",
-    });
-
     return (
         <div style={S.root} className="hero-page">
             <style>{CSS}</style>
 
-
             {/* ── HERO ── */}
             <section style={S.heroSection}>
-                {/* Subtle grid background */}
                 <div style={S.gridBg} aria-hidden />
 
                 <div style={{
@@ -125,7 +400,7 @@ export default function Hero() {
                     {/* Badge */}
                     <div style={S.badge}>
                         <span style={S.badgeDot} className="pulse-dot" />
-                        <span>v2.0 — AI-assisted branching</span>
+                        <span>Beta Release — Actively in Development</span>
                         <span style={S.badgeArrow}>→</span>
                     </div>
 
@@ -153,61 +428,16 @@ export default function Hero() {
                             View live demo
                         </button>
                     </div>
-
-                    {/* Social proof */}
-                    <div style={S.socialRow}>
-                        <div style={S.avatarStack}>
-                            {["#c9b8a8", "#b8c9a8", "#a8b8c9", "#c9a8b8"].map((c, i) => (
-                                <div key={i} style={{ ...S.avatar, background: c, marginLeft: i === 0 ? 0 : -10, zIndex: 4 - i }} />
-                            ))}
-                        </div>
-                        <p style={S.socialProof}>
-                            <strong style={{ color: "#111" }}>12,000+</strong> teams already automating
-                        </p>
-                    </div>
                 </div>
 
-                {/* Terminal / code preview card */}
+                {/* Canvas preview card */}
                 <div style={{
                     ...S.terminalWrap,
                     opacity: mounted ? 1 : 0,
                     transform: mounted ? "none" : "translateY(24px)",
                     transition: "opacity 0.8s ease 0.25s, transform 0.8s ease 0.25s",
                 }}>
-                    <div style={S.terminal}>
-                        <div style={S.termBar}>
-                            <div style={S.termDots}>
-                                <span style={{ ...S.termDot, background: "#ff5f57" }} />
-                                <span style={{ ...S.termDot, background: "#febc2e" }} />
-                                <span style={{ ...S.termDot, background: "#28c840" }} />
-                            </div>
-                            <span style={S.termTitle}>order-pipeline.graphql</span>
-                            <span style={S.termLive}>
-                                <span className="pulse-dot" style={{ background: "#22c55e", width: 5, height: 5 }} />
-                                Live
-                            </span>
-                        </div>
-                        <pre style={S.termBody}>{GQL}</pre>
-                        <div style={S.termFooter}>
-                            <div style={S.termStat}>
-                                <span style={{ color: "#22c55e", fontWeight: 600 }}>3</span> running
-                            </div>
-                            <div style={S.termStat}>
-                                <span style={{ color: "#111", fontWeight: 600 }}>84ms</span> avg
-                            </div>
-                            <div style={S.termStat}>
-                                <span style={{ color: "#111", fontWeight: 600 }}>99.9%</span> uptime
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Floating badges */}
-                    <div style={{ ...S.floatBadge, top: -14, right: 32 }} className="float-a">
-                        <span style={S.floatIcon}>⚡</span> Deployed in 1 click
-                    </div>
-                    <div style={{ ...S.floatBadge, bottom: -14, left: 24 }} className="float-b">
-                        <span style={S.floatIcon}>🔗</span> 200+ integrations
-                    </div>
+                    <MockCanvas />
                 </div>
             </section>
 
@@ -219,14 +449,14 @@ export default function Hero() {
                     transition: "opacity 0.6s ease 0.3s",
                 }}>
                     {[
-                        { val: "200", suffix: "+", label: "Integrations" },
-                        { val: "50", suffix: "K+", label: "Workflows built" },
-                        { val: "99.9", suffix: "%", label: "Uptime SLA" },
-                        { val: null, raw: "<1s", label: "Avg latency" },
-                    ].map((s, i) => (
+                        { val: "Visual Editor", label: "No-code canvas" },
+                        { val: "Real-time", label: "Live execution logs" },
+                        { val: "API-First", label: "GraphQL ready" },
+                        { val: "Scalable", label: "Built for speed" },
+                    ].map((s) => (
                         <div key={s.label} style={S.statItem} className="h-stat">
-                            <div style={S.statNum}>
-                                {s.raw ? s.raw : <Counter target={s.val} suffix={s.suffix} />}
+                            <div style={{ ...S.statNum, fontSize: "clamp(1.2rem, 2vw, 1.6rem)" }}>
+                                {s.val}
                             </div>
                             <div style={S.statLabel}>{s.label}</div>
                         </div>
@@ -250,7 +480,9 @@ export default function Hero() {
                             <div style={S.featIconWrap} dangerouslySetInnerHTML={{ __html: f.icon }} />
                             <div style={S.featTag}>{f.tag}</div>
                             <h3 style={S.featHead}>
-                                {f.headline.split("\n").map((l, j) => <span key={j}>{l}{j === 0 && <br />}</span>)}
+                                {f.headline.split("\n").map((l, j) => (
+                                    <span key={j}>{l}{j === 0 && <br />}</span>
+                                ))}
                             </h3>
                             <p style={S.featBody}>{f.body}</p>
                         </div>
@@ -294,61 +526,15 @@ export default function Hero() {
                 </div>
             </section>
 
-            {/* ── LOGOS ── */}
+            {/* ── ROADMAP ── */}
             <section id="logos" style={{ ...S.section, ...S.logoSection }}>
-                <div style={S.sectionLabel}>Integrations</div>
-                <p style={S.logoHeadline}>Connects with the tools your team already loves</p>
+                <div style={S.sectionLabel}>Roadmap</div>
+                <p style={S.logoHeadline}>Future enhancements and planned features</p>
                 <div style={S.logoGrid}>
                     {LOGOS.map((l) => (
                         <div key={l} style={S.logoChip} className="h-logo-chip">{l}</div>
                     ))}
-                    <div style={{ ...S.logoChip, ...S.logoMore }} className="h-logo-chip">+190 more</div>
-                </div>
-            </section>
-
-            {/* ── TESTIMONIALS ── */}
-            <section style={{ ...S.section, ...S.testiSection }}>
-                <div style={S.sectionLabel}>Social proof</div>
-                <h2 style={S.sectionH2}>Loved by engineering teams</h2>
-
-                <div style={S.testiGrid}>
-                    {TESTIMONIALS.map((t, i) => (
-                        <div
-                            key={i}
-                            style={{
-                                ...S.testiCard,
-                                ...(activeTesti === i ? S.testiCardActive : {}),
-                            }}
-                            className="h-testi-card"
-                            onClick={() => setActiveTesti(i)}
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#e5e5e5" style={{ marginBottom: 14, flexShrink: 0 }}>
-                                <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .757-2 2v11c0 1 .28 2 1.5 2zm9 0c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .757-2 2v11c0 1 .28 2 1.5 2z" />
-                            </svg>
-                            <p style={S.testiQuote}>{t.quote}</p>
-                            <div style={S.testiAuthor}>
-                                <div style={{ ...S.avatar, background: ["#c9b8a8", "#b8c9a8", "#a8b8c9"][i], width: 32, height: 32, fontSize: 12 }}>
-                                    {t.name.split(" ").map(n => n[0]).join("")}
-                                </div>
-                                <div>
-                                    <div style={S.testiName}>{t.name}</div>
-                                    <div style={S.testiRole}>{t.role}</div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Dot nav */}
-                <div style={S.testiDots}>
-                    {TESTIMONIALS.map((_, i) => (
-                        <button
-                            key={i}
-                            onClick={() => setActiveTesti(i)}
-                            style={{ ...S.testiDot, ...(activeTesti === i ? S.testiDotActive : {}) }}
-                            aria-label={`Testimonial ${i + 1}`}
-                        />
-                    ))}
+                    <div style={{ ...S.logoChip, ...S.logoMore }} className="h-logo-chip">And more...</div>
                 </div>
             </section>
 
@@ -371,9 +557,6 @@ export default function Hero() {
                             Book a demo
                         </button>
                     </div>
-                    <p style={{ ...S.socialProof, marginTop: 20, color: "#bbb" }}>
-                        Trusted by <strong style={{ color: "#888" }}>12,000+</strong> engineering teams
-                    </p>
                 </div>
             </section>
 
@@ -412,24 +595,7 @@ export default function Hero() {
     );
 }
 
-const GQL = `query GetWorkflowRuns {
-  workflow(id: "order-pipeline") {
-    name
-    status        # ACTIVE
-    runs(last: 3) {
-      edges {
-        node {
-          id
-          status    # SUCCESS
-          durationMs
-          output
-        }
-      }
-    }
-  }
-}`;
-
-/* ─── Styles ─── */
+/* ─── Page Styles ─── */
 const S = {
     root: {
         minHeight: "100vh",
@@ -439,22 +605,6 @@ const S = {
         overflowX: "hidden",
         paddingTop: 64,
     },
-
-    /* Topbar */
-    //   topbar: {
-    //     display: "flex",
-    //     alignItems: "center",
-    //     justifyContent: "space-between",
-    //     padding: "0 40px",
-    //     height: 60,
-    //     borderBottom: "1px solid #e8e8e8",
-    //     background: "rgba(255,255,255,0.92)",
-    //     backdropFilter: "blur(12px)",
-    //     WebkitBackdropFilter: "blur(12px)",
-    //     position: "sticky",
-    //     top: 0,
-    //     zIndex: 100,
-    //   },
     logo: {
         fontFamily: "'Geist Mono', 'DM Mono', monospace",
         fontSize: 16,
@@ -463,47 +613,6 @@ const S = {
         color: "#111",
         flexShrink: 0,
     },
-    //   navLinks: { display: "flex", alignItems: "center", gap: 4 },
-    //   navLink: {
-    //     padding: "6px 12px",
-    //     color: "#666",
-    //     textDecoration: "none",
-    //     fontSize: 13,
-    //     fontWeight: 500,
-    //     borderRadius: 6,
-    //     transition: "color 0.15s, background 0.15s",
-    //   },
-    //   topbarRight: { display: "flex", alignItems: "center", gap: 10 },
-    //   topbarMeta: { fontSize: 12, color: "#bbb", marginRight: 4 },
-    //   hamburgerLine: {
-    //     display: "block",
-    //     width: 18,
-    //     height: 1.5,
-    //     background: "#111",
-    //     borderRadius: 2,
-    //     transition: "transform 0.2s, opacity 0.2s",
-    //   },
-
-    /* Mobile menu */
-    //   mobileMenu: {
-    //     position: "fixed",
-    //     top: 60,
-    //     left: 0,
-    //     right: 0,
-    //     background: "#fff",
-    //     borderBottom: "1px solid #e8e8e8",
-    //     zIndex: 99,
-    //     display: "flex",
-    //     flexDirection: "column",
-    //   },
-    //   mobileNavLink: {
-    //     padding: "14px 24px",
-    //     color: "#444",
-    //     textDecoration: "none",
-    //     fontSize: 14,
-    //     fontWeight: 500,
-    //     borderBottom: "1px solid #f0f0f0",
-    //   },
 
     /* Hero */
     heroSection: {
@@ -570,104 +679,10 @@ const S = {
         margin: "0 0 32px",
     },
     ctaRow: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24, alignItems: "center" },
-    socialRow: { display: "flex", alignItems: "center", gap: 12 },
-    avatarStack: { display: "flex", alignItems: "center" },
-    avatar: {
-        width: 28,
-        height: 28,
-        borderRadius: "50%",
-        border: "2px solid #fff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: 10,
-        fontWeight: 600,
-        color: "#fff",
-        flexShrink: 0,
-    },
-    socialProof: { fontSize: 13, color: "#888", margin: 0 },
-
-    /* Terminal */
     terminalWrap: {
         position: "relative",
         zIndex: 1,
     },
-    terminal: {
-        background: "#fff",
-        border: "1px solid #e5e5e5",
-        borderRadius: 14,
-        overflow: "hidden",
-        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 16px 48px -8px rgba(0,0,0,0.08)",
-    },
-    termBar: {
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "12px 16px",
-        borderBottom: "1px solid #f0f0f0",
-        background: "#fafafa",
-    },
-    termDots: { display: "flex", gap: 6 },
-    termDot: { width: 10, height: 10, borderRadius: "50%" },
-    termTitle: {
-        fontSize: 12,
-        color: "#888",
-        fontFamily: "'Geist Mono', monospace",
-        flex: 1,
-        textAlign: "center",
-    },
-    termLive: {
-        display: "flex",
-        alignItems: "center",
-        gap: 5,
-        fontSize: 11,
-        fontWeight: 600,
-        color: "#22c55e",
-        background: "#f0fdf4",
-        padding: "3px 8px",
-        borderRadius: 100,
-        border: "1px solid #bbf7d0",
-    },
-    termBody: {
-        margin: 0,
-        padding: "20px",
-        fontFamily: "'Geist Mono', 'DM Mono', monospace",
-        fontSize: 12,
-        lineHeight: 1.8,
-        color: "#555",
-        background: "#fff",
-        overflowX: "auto",
-    },
-    termFooter: {
-        display: "flex",
-        gap: 24,
-        padding: "12px 20px",
-        borderTop: "1px solid #f0f0f0",
-        background: "#fafafa",
-    },
-    termStat: {
-        fontSize: 12,
-        color: "#888",
-        display: "flex",
-        gap: 6,
-        alignItems: "center",
-    },
-    floatBadge: {
-        position: "absolute",
-        display: "flex",
-        alignItems: "center",
-        gap: 7,
-        padding: "8px 14px",
-        background: "#fff",
-        border: "1px solid #e5e5e5",
-        borderRadius: 100,
-        fontSize: 12,
-        fontWeight: 500,
-        color: "#444",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.07)",
-        whiteSpace: "nowrap",
-    },
-    floatIcon: { fontSize: 14 },
 
     /* Stats */
     statsWrap: {
@@ -884,7 +899,7 @@ const S = {
         letterSpacing: "0.02em",
     },
 
-    /* Logos */
+    /* Roadmap */
     logoSection: { marginTop: 0 },
     logoHeadline: {
         fontSize: 15,
@@ -914,73 +929,6 @@ const S = {
         borderStyle: "dashed",
     },
 
-    /* Testimonials */
-    testiSection: { marginTop: 0 },
-    testiGrid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
-        gap: 16,
-        marginBottom: 24,
-    },
-    testiCard: {
-        padding: "28px",
-        background: "#fff",
-        border: "1px solid #e8e8e8",
-        borderRadius: 12,
-        cursor: "pointer",
-        transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s",
-        display: "flex",
-        flexDirection: "column",
-        gap: 0,
-    },
-    testiCardActive: {
-        borderColor: "#111",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-        transform: "translateY(-2px)",
-    },
-    testiQuote: {
-        fontSize: 14,
-        color: "#555",
-        lineHeight: 1.7,
-        margin: "0 0 20px",
-        flexGrow: 1,
-    },
-    testiAuthor: {
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-    },
-    testiName: {
-        fontSize: 13,
-        fontWeight: 600,
-        color: "#111",
-        letterSpacing: "-0.01em",
-    },
-    testiRole: {
-        fontSize: 11,
-        color: "#aaa",
-        fontWeight: 500,
-    },
-    testiDots: {
-        display: "flex",
-        gap: 8,
-        justifyContent: "center",
-    },
-    testiDot: {
-        width: 6,
-        height: 6,
-        borderRadius: "50%",
-        background: "#e5e5e5",
-        border: "none",
-        cursor: "pointer",
-        transition: "background 0.2s, transform 0.2s",
-        padding: 0,
-    },
-    testiDotActive: {
-        background: "#111",
-        transform: "scale(1.3)",
-    },
-
     /* CTA Banner */
     ctaBanner: {
         background: "#fff",
@@ -1007,9 +955,7 @@ const S = {
         borderBottom: "1px solid #e8e8e8",
         flexWrap: "wrap",
     },
-    footerBrand: {
-        flex: "0 0 200px",
-    },
+    footerBrand: { flex: "0 0 200px" },
     footerTagline: {
         fontSize: 13,
         color: "#aaa",
@@ -1063,39 +1009,20 @@ const S = {
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
 
-.hero-page *, 
-.hero-page *::before, 
-.hero-page *::after {
-  box-sizing: border-box;
-}
+  .hero-page *,
+  .hero-page *::before,
+  .hero-page *::after { box-sizing: border-box; }
+
   /* ── Buttons ── */
   .h-cta-primary {
-    display: inline-flex;
-    align-items: center;
-    padding: 12px 22px;
-    background: #111;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    letter-spacing: -0.01em;
-    transition: opacity 0.15s, transform 0.15s;
-    white-space: nowrap;
+    display: inline-flex; align-items: center;
+    padding: 12px 22px; background: #111; color: #fff;
+    border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit; letter-spacing: -0.01em;
+    transition: opacity 0.15s, transform 0.15s; white-space: nowrap;
   }
   .h-cta-primary:hover { opacity: 0.8; transform: translateY(-1px); }
   .h-cta-primary:active { transform: translateY(0); opacity: 0.7; }
-
-  .h-btn-primary {
-    display: inline-flex; align-items: center;
-    padding: 8px 16px; background: #111; color: #fff;
-    border: none; border-radius: 6px; font-size: 13px; font-weight: 600;
-    cursor: pointer; font-family: inherit; letter-spacing: -0.01em;
-    transition: opacity 0.15s; white-space: nowrap;
-  }
-  .h-btn-primary:hover { opacity: 0.75; }
 
   .h-btn-ghost {
     display: inline-flex; align-items: center;
@@ -1108,25 +1035,12 @@ const CSS = `
 
   /* ── Pulse ── */
   .pulse-dot {
-    display: inline-block;
-    border-radius: 50%;
+    display: inline-block; border-radius: 50%;
     animation: pulseAnim 2s ease-in-out infinite;
   }
   @keyframes pulseAnim {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-    50% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
-  }
-
-  /* ── Floating badges ── */
-  .float-a { animation: floatA 4s ease-in-out infinite; }
-  .float-b { animation: floatB 5s ease-in-out infinite; }
-  @keyframes floatA {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
-  }
-  @keyframes floatB {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(5px); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+    50%       { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
   }
 
   /* ── Stat hover ── */
@@ -1139,30 +1053,15 @@ const CSS = `
 
   /* ── Step buttons ── */
   .h-step-btn {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 22px;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid #e8e8e8;
-    cursor: pointer;
-    text-align: left;
-    width: 100%;
-    font-family: inherit;
-    transition: background 0.12s;
-    position: relative;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 22px; background: transparent; border: none;
+    border-bottom: 1px solid #e8e8e8; cursor: pointer; text-align: left;
+    width: 100%; font-family: inherit; transition: background 0.12s; position: relative;
   }
   .h-step-btn::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 2px;
-    background: #111;
-    transform: scaleY(0);
-    transform-origin: center;
-    transition: transform 0.25s ease;
-    border-radius: 0 2px 2px 0;
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: #111; transform: scaleY(0); transform-origin: center;
+    transition: transform 0.25s ease; border-radius: 0 2px 2px 0;
   }
   .h-step-btn:last-child { border-bottom: none; }
   .h-step-btn:hover { background: #f5f5f5; }
@@ -1183,62 +1082,28 @@ const CSS = `
   /* ── Logo chips ── */
   .h-logo-chip:hover { border-color: #bbb; color: #111; transform: translateY(-2px); }
 
-  /* ── Testimonial cards ── */
-  .h-testi-card:hover { border-color: #ccc; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
-
   /* ── Nav links ── */
-  .h-nav-link:hover { color: #111 !important; background: #f5f5f5 !important; }
+  .h-nav-link:hover { color: #111 !important; }
+
+  /* ── Sidebar item hover ── */
+  .mc-sb-item:hover { background: #2a2a32; }
 
   /* ── Mobile ── */
-  .h-hamburger {
-    display: none;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-  .mobile-menu-in { animation: menuIn 0.2s ease; }
-  @keyframes menuIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  @media (max-width: 900px) {
-    .desk-nav { display: none !important; }
-    .desk-meta { display: none !important; }
-    .h-hamburger { display: flex !important; }
-  }
-
   @media (max-width: 860px) {
-    /* Hero stacks */
     section[style*="grid-template-columns: 1fr 1fr"] {
       grid-template-columns: 1fr !important;
     }
-    /* Features */
     div[style*="repeat(4, 1fr)"] {
       grid-template-columns: repeat(2, 1fr) !important;
     }
-    /* Stats */
-    div[style*="statsStrip"] {
-      flex-wrap: wrap;
-    }
-    /* How it works */
     div[style*="220px 1fr"] {
       grid-template-columns: 1fr !important;
     }
-    /* Testimonials */
-    div[style*="repeat(3, 1fr)"] {
-      grid-template-columns: 1fr !important;
-    }
   }
-
   @media (max-width: 540px) {
     div[style*="repeat(4, 1fr)"],
     div[style*="repeat(2, 1fr)"] {
       grid-template-columns: 1fr !important;
     }
-    .h-feat-card:last-child { border-right: 0 !important; }
   }
 `;

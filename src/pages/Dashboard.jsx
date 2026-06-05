@@ -262,6 +262,7 @@ function Dashboard() {
     return (
         <div style={S.root}>
             <style>{CSS}</style>
+            <div style={S.gridBg} aria-hidden />
 
             {(showCreateModal || showRenameModal) && (
                 <div style={S.backdrop} onClick={closeModals}>
@@ -361,8 +362,8 @@ function Dashboard() {
                         { label: "Total", value: stats.total },
                         { label: "Active", value: stats.active },
                         { label: "Inactive", value: stats.inactive },
-                    ].map((s) => (
-                        <div key={s.label} style={S.statBox} className="m-stat">
+                    ].map((s, i, arr) => (
+                        <div key={s.label} style={{ ...S.statBox, borderRight: i < arr.length - 1 ? "1px solid #e8e8e8" : "none" }} className="m-stat">
                             <div style={S.statVal}>{loading ? "—" : <Counter target={s.value} />}</div>
                             <div style={S.statLabel}>{s.label}</div>
                         </div>
@@ -471,15 +472,14 @@ function Dashboard() {
                                     </span>
                                     <span style={{ ...S.tableCell, flex: 1 }}>
                                         <span style={{
-                                            display: "inline-flex", alignItems: "center", gap: 5,
-                                            fontSize: 11, fontWeight: 500,
-                                            color: isActive ? "#111" : "#bbb",
+                                            display: "inline-flex", alignItems: "center", gap: 6,
+                                            fontSize: 11, fontWeight: 700,
+                                            color: isActive ? "#16a34a" : "#888",
+                                            background: isActive ? "#f0fdf4" : "#f5f5f5",
+                                            padding: "4px 10px", borderRadius: 100,
+                                            border: isActive ? "1px solid #bbf7d0" : "1px solid #e5e5e5",
+                                            fontFamily: "'Geist Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em"
                                         }}>
-                                            <span style={{
-                                                width: 5, height: 5, borderRadius: "50%",
-                                                background: isActive ? "#111" : "#ddd",
-                                                display: "inline-block", flexShrink: 0,
-                                            }} />
                                             {isActive ? "Active" : "Inactive"}
                                         </span>
                                     </span>
@@ -518,8 +518,21 @@ const S = {
         background: "#fafafa",
         color: "#111",
         fontFamily: "'Geist', 'Inter', 'Helvetica Neue', sans-serif",
+        position: "relative",
+        overflowX: "hidden",
     },
-    page: { maxWidth: 1100, margin: "0 auto", padding: "120px 40px 80px" },
+    gridBg: {
+        position: "fixed",
+        inset: 0,
+        backgroundImage: "linear-gradient(#e8e8e8 1px, transparent 1px), linear-gradient(90deg, #e8e8e8 1px, transparent 1px)",
+        backgroundSize: "40px 40px",
+        opacity: 0.35,
+        maskImage: "radial-gradient(ellipse 100% 100% at 50% 0%, black 40%, transparent 100%)",
+        WebkitMaskImage: "radial-gradient(ellipse 100% 100% at 50% 0%, black 40%, transparent 100%)",
+        zIndex: 0,
+        pointerEvents: "none",
+    },
+    page: { maxWidth: 1100, margin: "0 auto", padding: "120px 40px 80px", position: "relative", zIndex: 1 },
     topbar: {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "28px 0 20px", marginBottom: 56, borderBottom: "1px solid #e5e5e5",
@@ -535,20 +548,21 @@ const S = {
         fontSize: "clamp(1.8rem, 3vw, 2.4rem)", fontWeight: 700,
         letterSpacing: "-0.04em", color: "#111", margin: "0 0 8px", lineHeight: 1.1,
     },
-    subtitle: { fontSize: 14, color: "#888", margin: 0, fontWeight: 400 },
+    subtitle: { fontSize: 15, color: "#888", margin: 0, fontWeight: 400, lineHeight: 1.65 },
     statsRow: {
-        display: "flex", marginBottom: 32,
-        borderTop: "1px solid #e5e5e5", borderBottom: "1px solid #e5e5e5",
+        display: "flex", marginBottom: 48,
+        border: "1px solid #e8e8e8", borderRadius: 12, overflow: "hidden",
+        background: "#fff",
     },
     statBox: {
-        flex: 1, padding: "24px 0 24px 24px",
-        borderRight: "1px solid #e5e5e5",
-        display: "flex", flexDirection: "column", gap: 4,
+        flex: 1, padding: "28px 32px",
+        display: "flex", flexDirection: "column", gap: 6,
         transition: "background 0.15s", cursor: "default",
     },
     statVal: {
-        fontSize: "clamp(1.6rem, 3vw, 2rem)", fontWeight: 700,
+        fontSize: "clamp(1.8rem, 3vw, 2.4rem)", fontWeight: 700,
         letterSpacing: "-0.04em", color: "#111", lineHeight: 1,
+        fontFamily: "'Geist Mono', monospace",
     },
     statLabel: {
         fontSize: 11, color: "#aaa", fontWeight: 600,
@@ -556,13 +570,13 @@ const S = {
     },
     toolbar: {
         display: "flex", alignItems: "center", gap: 10,
-        marginBottom: 4, flexWrap: "wrap", paddingTop: 16,
+        marginBottom: 12, flexWrap: "wrap", paddingTop: 16,
     },
     searchBox: {
         display: "flex", alignItems: "center", gap: 8,
-        border: "1px solid #e5e5e5", borderRadius: 6,
-        padding: "0 12px", height: 34, background: "#fff",
-        flex: 1, minWidth: 200, maxWidth: 260, transition: "border-color 0.15s",
+        border: "1px solid #e5e5e5", borderRadius: 8,
+        padding: "0 14px", height: 40, background: "#fff",
+        flex: 1, minWidth: 240, maxWidth: 320, transition: "border-color 0.15s",
     },
     searchInput: {
         background: "transparent", border: "none", outline: "none",
@@ -574,73 +588,78 @@ const S = {
     },
     filters: {
         display: "flex", gap: 2,
-        background: "#f0f0f0", borderRadius: 6, padding: 3,
+        background: "#f5f5f5", borderRadius: 8, padding: 4,
+        border: "1px solid #e5e5e5",
     },
     filterBtn: {
-        padding: "4px 12px", borderRadius: 4, border: "none",
-        background: "transparent", color: "#888", fontSize: 12,
-        fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "color 0.15s",
+        padding: "6px 14px", borderRadius: 6, border: "none",
+        background: "transparent", color: "#666", fontSize: 13,
+        fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "color 0.15s, background 0.15s",
     },
     filterBtnActive: {
-        background: "#fff", color: "#111", boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        background: "#fff", color: "#111", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", fontWeight: 600,
     },
     sortSelect: {
-        border: "1px solid #e5e5e5", borderRadius: 6, padding: "0 12px",
-        height: 34, fontSize: 12, color: "#555", background: "#fff",
+        border: "1px solid #e5e5e5", borderRadius: 8, padding: "0 14px",
+        height: 40, fontSize: 13, color: "#555", background: "#fff",
         outline: "none", cursor: "pointer", fontFamily: "inherit",
-        appearance: "none", minWidth: 100,
+        appearance: "none", minWidth: 120, fontWeight: 500,
     },
     errorBar: {
         padding: "10px 14px", border: "1px solid #111",
-        borderRadius: 6, fontSize: 13, color: "#111", marginBottom: 20,
+        borderRadius: 8, fontSize: 13, color: "#111", marginBottom: 20,
     },
     center: { display: "flex", justifyContent: "center", padding: "80px 0" },
     empty: {
         padding: "80px 0", display: "flex", flexDirection: "column",
-        alignItems: "center", gap: 10, borderTop: "1px solid #e5e5e5",
+        alignItems: "center", gap: 12, borderTop: "1px solid #e5e5e5", marginTop: 20,
     },
-    emptyTitle: { fontSize: 16, fontWeight: 600, color: "#111", letterSpacing: "-0.02em" },
-    emptyBody: { fontSize: 13, color: "#999", marginBottom: 8 },
+    emptyTitle: { fontSize: 18, fontWeight: 600, color: "#111", letterSpacing: "-0.02em" },
+    emptyBody: { fontSize: 14, color: "#888", marginBottom: 12, textAlign: "center" },
     tableHead: {
         display: "flex", alignItems: "center",
-        borderTop: "1px solid #e5e5e5", borderBottom: "1px solid #e5e5e5",
-        padding: "10px 0", marginTop: 16,
+        padding: "10px 0", marginBottom: 12,
     },
     tableHeadCell: {
         fontSize: 11, fontWeight: 600, color: "#aaa",
-        textTransform: "uppercase", letterSpacing: "0.07em", padding: "0 12px",
+        textTransform: "uppercase", letterSpacing: "0.08em", padding: "0 16px",
+        fontFamily: "'Geist Mono', monospace",
     },
     tableRow: {
         display: "flex", alignItems: "center",
-        borderBottom: "1px solid #f0f0f0",
-        padding: "15px 0", cursor: "pointer", transition: "background 0.12s",
+        background: "#fff",
+        border: "1px solid #e5e5e5",
+        borderRadius: 12,
+        padding: "16px 0", cursor: "pointer", transition: "border-color 0.15s, box-shadow 0.15s, transform 0.15s",
+        marginBottom: 8,
     },
     tableCell: {
         display: "flex", alignItems: "center",
-        padding: "0 12px", fontSize: 13, color: "#555", overflow: "hidden",
+        padding: "0 16px", fontSize: 13, color: "#555", overflow: "hidden",
     },
     rowName: {
-        fontWeight: 600, color: "#111", letterSpacing: "-0.01em",
+        fontWeight: 600, color: "#111", letterSpacing: "-0.01em", fontSize: 14,
         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
     },
     rowDesc: {
-        color: "#bbb", overflow: "hidden", textOverflow: "ellipsis",
-        whiteSpace: "nowrap", fontSize: 12,
+        color: "#888", overflow: "hidden", textOverflow: "ellipsis",
+        whiteSpace: "nowrap", fontSize: 13,
     },
     tableFooter: {
-        fontSize: 11, color: "#ccc", padding: "14px 12px 0",
-        letterSpacing: "0.02em",
+        fontSize: 11, color: "#aaa", padding: "20px 12px 0",
+        letterSpacing: "0.02em", fontFamily: "'Geist Mono', monospace",
     },
     btnPrimary: {
-        padding: "8px 16px", background: "#111", color: "#fafafa",
-        border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600,
+        padding: "10px 18px", background: "#111", color: "#fff",
+        border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600,
         cursor: "pointer", fontFamily: "inherit", letterSpacing: "-0.01em",
-        transition: "opacity 0.15s", whiteSpace: "nowrap",
+        transition: "opacity 0.15s, transform 0.15s", whiteSpace: "nowrap",
+        display: "inline-flex", alignItems: "center", gap: 8,
     },
     btnSecondary: {
-        padding: "8px 16px", background: "transparent", color: "#888",
-        border: "1px solid #e5e5e5", borderRadius: 6, fontSize: 13,
-        fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "border-color 0.15s",
+        padding: "10px 18px", background: "transparent", color: "#888",
+        border: "1px solid #e5e5e5", borderRadius: 8, fontSize: 13,
+        fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "border-color 0.15s, color 0.15s, background 0.15s",
     },
     iconBtn: {
         background: "none", border: "none", color: "#ccc", cursor: "pointer",
@@ -677,43 +696,45 @@ const S = {
         justifyContent: "center", zIndex: 100, padding: 20,
     },
     modal: {
-        background: "#fff", border: "1px solid #e5e5e5", borderRadius: 12,
-        width: "100%", maxWidth: 400, boxShadow: "0 24px 48px rgba(0,0,0,0.08)",
-        animation: "modalIn 0.2s ease", overflow: "hidden",
+        background: "#fff", border: "1px solid #e8e8e8", borderRadius: 16,
+        width: "100%", maxWidth: 420, boxShadow: "0 24px 48px -12px rgba(0,0,0,0.15)",
+        animation: "modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)", overflow: "hidden",
     },
     modalTop: {
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "20px 20px 0",
+        padding: "24px 24px 0",
     },
-    modalTitle: { fontSize: 15, fontWeight: 700, color: "#111", letterSpacing: "-0.02em" },
-    modalFields: { padding: "20px 20px 0" },
-    field: { marginBottom: 16 },
+    modalTitle: { fontSize: 18, fontWeight: 700, color: "#111", letterSpacing: "-0.02em" },
+    modalFields: { padding: "24px 24px 0" },
+    field: { marginBottom: 18 },
     fieldLabel: {
         display: "block", fontSize: 11, fontWeight: 600, color: "#aaa",
-        letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6,
+        letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8,
+        fontFamily: "'Geist Mono', monospace",
     },
     fieldInput: {
-        width: "100%", border: "1px solid #e5e5e5", borderRadius: 6,
-        padding: "9px 12px", fontSize: 13, fontFamily: "inherit", color: "#111",
-        background: "#fafafa", outline: "none", boxSizing: "border-box", transition: "border-color 0.15s",
+        width: "100%", border: "1px solid #e5e5e5", borderRadius: 8,
+        padding: "10px 14px", fontSize: 14, fontFamily: "inherit", color: "#111",
+        background: "#fafafa", outline: "none", boxSizing: "border-box", transition: "border-color 0.15s, background 0.15s",
     },
     modalActions: {
         display: "flex", justifyContent: "flex-end",
-        gap: 8, padding: "16px 20px 20px",
+        gap: 10, padding: "24px", background: "#fafafa", borderTop: "1px solid #f0f0f0", marginTop: 24,
     },
 };
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;600&display=swap');
   * { box-sizing: border-box; }
-  .m-btn-primary:hover { opacity: 0.75; }
-  .m-btn-secondary:hover { border-color: #bbb !important; color: #444 !important; }
-  .m-row:hover { background: #f7f7f7 !important; }
-  .m-icon-btn:hover { background: #f0f0f0 !important; color: #555 !important; }
-  .m-stat:hover { background: #f7f7f7 !important; }
+  .m-btn-primary:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+  .m-btn-primary:active:not(:disabled) { transform: translateY(0); }
+  .m-btn-secondary:hover { border-color: #bbb !important; color: #111 !important; background: #fafafa !important; }
+  .m-row:hover { border-color: #ccc !important; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transform: translateY(-1px); }
+  .m-icon-btn:hover { background: #f5f5f5 !important; color: #111 !important; }
+  .m-stat:hover { background: #fafafa !important; }
   .m-input:focus { border-color: #111 !important; background: #fff !important; }
   .m-search:focus-within { border-color: #bbb !important; }
-  .m-filter-btn:hover { color: #444 !important; }
+  .m-filter-btn:hover { color: #111 !important; }
   .m-select:hover { border-color: #bbb !important; }
   .m-menu-item:hover { background: #f5f5f5 !important; }
   .m-menu-item-danger:hover { background: #fff1f1 !important; }
